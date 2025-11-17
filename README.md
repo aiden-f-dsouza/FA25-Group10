@@ -40,6 +40,6 @@ FA25-Group10/
 
 ## Team Members
 
-Team Members: aidenfd2
+Team Members: aidenfd2, ammarj2
 
 Project Manager: sriram6
