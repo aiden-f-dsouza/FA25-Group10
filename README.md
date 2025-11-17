@@ -1,7 +1,7 @@
 # Group TEAM_NUMBER
 Group Name: TEAM_NAME
 
-[MVP Link](https://docs.google.com/document/d/1xFI9DDdO5HZAcu36Y6NL-RTDry5E3WHkfy-ZEWuqbXM/edit?usp=sharing)
+[MVP Link]([https://docs.google.com/document/d/1xFI9DDdO5HZAcu36Y6NL-RTDry5E3WHkfy-ZEWuqbXM/edit?usp=sharing](https://docs.google.com/document/d/1oC2AsTqQxLYonm2EUvAERGEcO07wXOhU5fIP45uL-j8/edit?usp=sharing))
 
 ## Project Overview
 
