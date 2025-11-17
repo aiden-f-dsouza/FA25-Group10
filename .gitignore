@@ -1,1 +1,21 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Temporary files
+tmep/
+
+# Project-specific
+CLAUDE.md
