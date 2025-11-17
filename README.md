@@ -40,6 +40,6 @@ FA25-Group10/
 
 ## Team Members
 
-Team Members: STUDENTS_NETIDS
+Team Members: aidenfd2
 
 Project Manager: sriram6
