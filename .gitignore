@@ -17,5 +17,9 @@ Thumbs.db
 # Temporary files
 tmep/
 
+# Database and user uploads (runtime data - should not be committed)
+instance/
+uploads/
+
 # Project-specific
 CLAUDE.md
