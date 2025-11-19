@@ -396,12 +396,43 @@
         <!-- Metadata tags (author, date, class as badges) -->
         <div class="note-meta">
           <span class="meta-tag">👤 {{ n.author }}</span>
-          <span class="meta-tag">📅 {{ n.created }}</span>
-          <span class="meta-tag">📚 {{ n.class }}</span>
+          <span class="meta-tag">📅 {{ n.created.strftime('%Y-%m-%d %H:%M') }}</span>
+          <span class="meta-tag">📚 {{ n.class_code }}</span>
         </div>
 
         <!-- Note content/body -->
         <div class="note-body">{{ n.body }}</div>
+
+        <!-- Attachments section (only show if note has attachments) -->
+        {% if n.attachments %}
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(102, 126, 234, 0.2);">
+          <div style="font-size: 13px; font-weight: 600; color: #a0a3bd; margin-bottom: 8px;">
+            📎 Attachments ({{ n.attachments|length }}):
+          </div>
+          <!-- List of downloadable attachments -->
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for attachment in n.attachments %}
+            <!-- Each attachment as a download link with file type badge -->
+            <a href="/download/{{ attachment.id }}"
+               style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(102, 126, 234, 0.2); border-radius: 8px; color: #667eea; text-decoration: none; font-size: 13px; transition: all 0.3s ease; border: 1px solid rgba(102, 126, 234, 0.3);"
+               onmouseover="this.style.background='rgba(102, 126, 234, 0.3)'; this.style.transform='translateY(-2px)'"
+               onmouseout="this.style.background='rgba(102, 126, 234, 0.2)'; this.style.transform='translateY(0)'">
+              <!-- File type icon based on extension -->
+              {% if attachment.file_type == 'pdf' %}📄
+              {% elif attachment.file_type in ['png', 'jpg', 'jpeg', 'gif'] %}🖼️
+              {% elif attachment.file_type in ['doc', 'docx'] %}📝
+              {% elif attachment.file_type in ['ppt', 'pptx'] %}📊
+              {% else %}📎
+              {% endif %}
+              <!-- Display original filename -->
+              <span>{{ attachment.original_filename }}</span>
+              <!-- Download icon -->
+              <span style="opacity: 0.7;">⬇</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
       </div>
 
       <!-- Edit form (hidden by default, shown when edit button is clicked) -->
@@ -421,7 +452,7 @@
           <div style="margin-bottom: 12px;">
             <select name="class" style="width: 100%;">
               {% for c in classes %}
-              <option value="{{ c }}" {% if c == n.class %}selected{% endif %}>{{ c }}</option>
+              <option value="{{ c }}" {% if c == n.class_code %}selected{% endif %}>{{ c }}</option>
               {% endfor %}
             </select>
           </div>
@@ -466,7 +497,8 @@
     <div class="create-section">
       <div class="section-title">✍️ Create New Note</div>
 
-      <form method="POST" action="/">
+      <!-- enctype="multipart/form-data" is REQUIRED for file uploads -->
+      <form method="POST" action="/" enctype="multipart/form-data">
         <!-- Author name and note title (side by side on desktop) -->
         <div class="two">
           <input type="text" name="author" placeholder="Your name (optional)">
@@ -485,6 +517,23 @@
         <!-- Note content text area -->
         <div style="margin-top: 16px;">
           <textarea name="body" placeholder="Write your note..." required></textarea>
+        </div>
+
+        <!-- File upload input -->
+        <!-- The 'multiple' attribute allows users to select multiple files at once -->
+        <div style="margin-top: 16px;">
+          <label style="display: block; margin-bottom: 8px; color: #a0a3bd; font-size: 14px; font-weight: 600;">
+            📎 Attach Files (optional)
+          </label>
+          <input
+            type="file"
+            name="attachments"
+            multiple
+            accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.txt,.ppt,.pptx"
+            style="padding: 10px; background: rgba(23, 27, 46, 0.8); color: #e4e6eb; width: 100%;">
+          <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">
+            Allowed: PDFs, Images (PNG, JPG, GIF), Documents (DOC, DOCX, TXT, PPT, PPTX) • Max 16MB per file
+          </div>
         </div>
 
         <!-- Submit button (aligned to right) -->
