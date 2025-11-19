@@ -147,7 +147,7 @@ def delete_note(note_id):
 
 @app.route("/home")
 def home():
-    return render_template("home.html")
+    return render_template("homev2.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
