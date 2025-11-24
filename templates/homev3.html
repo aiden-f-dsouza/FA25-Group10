@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UIUC Turbolearn – The Knowledge Collective</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Share better notes, study smarter. A student-built platform for UIUC collaborative learning.">
+
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='turbolearn-darkmode.css') }}">
+
+    <!-- Google Fonts: Merriweather (Serif) + Inter (Sans-serif) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- HEADER / NAVIGATION -->
+<header class="tl-header">
+    <div class="tl-container">
+        <nav class="tl-nav">
+            <!-- Logo -->
+            <a href="#" class="tl-logo">
+                <div class="tl-logo-mark">TL</div>
+                <div class="tl-logo-text">
+                    <span class="tl-logo-main">UIUC Turbolearn</span>
+                    <span class="tl-logo-sub">Share knowledge · Build community</span>
+                </div>
+            </a>
+
+            <!-- Navigation Links -->
+            <div class="tl-nav-links">
+                <a href="#features">Features</a>
+                <a href="#why-we-built">Why We Built This</a>
+                <a href="#meet-the-team">Meet the Team</a>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="tl-nav-actions">
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="moon-icon">🌙</span>
+                    <span class="sun-icon">☀️</span>
+                </button>
+
+                <a href="#" class="btn btn-ghost">Log in</a>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Get started</a>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<main>
+    <!-- HERO SECTION -->
+    <section class="tl-hero">
+        <div class="tl-container">
+            <div class="tl-hero-grid">
+                <!-- Left: Main Message -->
+                <div class="tl-hero-left">
+                    <span class="tl-pill">Built by UIUC students, for UIUC students</span>
+                    
+                    <h1>
+                        The UIUC Knowledge Collective.
+                        <span class="highlight">Share better notes, study smarter.</span>
+                    </h1>
+                    
+                    <p class="tl-hero-sub">
+                        Stop searching through endless GroupMe threads. UIUC Turbolearn is a centralized 
+                        platform where students post, search, and organize class notes by course. 
+                        Never miss important lecture content again.
+                    </p>
+
+                    <div class="tl-hero-actions">
+                        <a href="{{ url_for('index') }}" class="btn btn-accent btn-lg">
+                            Start sharing notes
+                        </a>
+                        <a href="#features" class="btn btn-ghost btn-lg">
+                            See what's included
+                        </a>
+                    </div>
+
+                    <div class="tl-hero-metrics">
+                        <div>
+                            <span class="tl-metric-main">10+</span>
+                            <span class="tl-metric-sub">UIUC courses supported</span>
+                        </div>
+                        <div>
+                            <span class="tl-metric-main">Real-time</span>
+                            <span class="tl-metric-sub">note posting & updates</span>
+                        </div>
+                        <div>
+                            <span class="tl-metric-main">Free</span>
+                            <span class="tl-metric-sub">forever for students</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Bento Grid with Recent Notes -->
+                <div class="tl-hero-right">
+                    <!-- Main Card: Today's Activity -->
+                    <div class="tl-card tl-card-main">
+                        <div class="tl-card-header">
+                            <span>Recent Notes</span>
+                            <span class="tl-chip tl-chip-soft">Live feed</span>
+                        </div>
+                        
+                        <ul class="tl-task-list">
+                            <li>
+                                <div>
+                                    <span class="tl-chip tl-chip-orange">CS124</span>
+                                    <p>Binary Trees & Recursion Overview</p>
+                                </div>
+                                <span class="tl-task-time">2 min ago</span>
+                            </li>
+                            <li>
+                                <div>
+                                    <span class="tl-chip tl-chip-sage">MATH231</span>
+                                    <p>Vector Spaces Chapter 4 Summary</p>
+                                </div>
+                                <span class="tl-task-time">15 min ago</span>
+                            </li>
+                            <li>
+                                <div>
+                                    <span class="tl-chip tl-chip-indigo">CS128</span>
+                                    <p>Linked Lists Implementation Notes</p>
+                                </div>
+                                <span class="tl-task-time">1 hour ago</span>
+                            </li>
+                        </ul>
+
+                        <div class="tl-progress-block">
+                            <div class="tl-progress-label">
+                                <span>Community activity</span>
+                                <span>Growing daily</span>
+                            </div>
+                            <div class="tl-progress-bar">
+                                <div class="tl-progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Tip Card -->
+                    <div class="tl-card tl-card-floating">
+                        <span class="tl-floating-label">Quick tip</span>
+                        <p>
+                            Use filters to find notes by class, author, or date. 
+                            Search keywords to quickly locate specific topics.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="features" class="tl-section">
+        <div class="tl-container">
+            <div class="tl-section-header">
+                <h2>Everything you need to share and find notes.</h2>
+                <p>Simple tools designed to help UIUC students collaborate effectively.</p>
+            </div>
+
+            <div class="tl-features-grid">
+                <div class="tl-feature">
+                    <h3>Post & Edit Notes</h3>
+                    <p>
+                        Create notes with titles, authors, and course tags. Edit or delete your posts 
+                        anytime to keep information current and accurate.
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Smart Filtering</h3>
+                    <p>
+                        Filter notes by class (CS124, MATH221, etc.), author, or date range. 
+                        Sort by recency, title, or author name for easy navigation.
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Keyword Search</h3>
+                    <p>
+                        Search through note titles and content to quickly find exactly what you need 
+                        for homework or exam prep. Fast and intuitive.
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Course Organization</h3>
+                    <p>
+                        Notes are automatically organized by course. Supports CS, MATH, ENG, RHET, PHY, 
+                        and more UIUC classes with easy categorization.
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Time-Based Views</h3>
+                    <p>
+                        View notes from today, this week, this month, or all time. 
+                        Perfect for reviewing recent lectures before exams.
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Anonymous Posting</h3>
+                    <p>
+                        Share notes anonymously if you prefer, or add your name to build 
+                        a reputation as a helpful contributor in your courses.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHY WE BUILT THIS SECTION -->
+    <section id="why-we-built" class="tl-section tl-section-muted">
+        <div class="tl-container">
+            <div class="tl-uiuc-grid">
+                <div>
+                    <h2>Why we built this.</h2>
+                    <p class="tl-uiuc-text">
+                        We're a group of UIUC students who got tired of scrolling through endless GroupMe 
+                        messages trying to find that one set of notes someone shared last week. Class notes 
+                        shouldn't disappear into chat history. They should be organized, searchable, and 
+                        accessible to everyone who needs them.
+                    </p>
+                    <p class="tl-uiuc-text">
+                        This platform was born from real frustration and built to solve a real problem. 
+                        We wanted something that felt permanent, trustworthy, and actually useful—not just 
+                        another disposable tool.
+                    </p>
+                    <ul class="tl-checklist">
+                        <li>Centralized place for all course notes instead of scattered chats</li>
+                        <li>Built with Flask and designed specifically for UIUC courses</li>
+                        <li>No ads, no paywalls—just students helping students learn better</li>
+                        <li>Created as a CS124 Honors group project (FA25-Group10)</li>
+                    </ul>
+                </div>
+                
+                <div class="tl-uiuc-panel">
+                    <h3>How students use it</h3>
+                    <ul class="tl-week-list">
+                        <li>
+                            <span>Step 1</span>
+                            <p>Browse notes after missing a lecture to catch up on key concepts</p>
+                        </li>
+                        <li>
+                            <span>Step 2</span>
+                            <p>Post study guides before exams to help classmates prepare</p>
+                        </li>
+                        <li>
+                            <span>Step 3</span>
+                            <p>Search for specific topics when working on homework assignments</p>
+                        </li>
+                        <li>
+                            <span>Step 4</span>
+                            <p>Filter by class to see all notes relevant to upcoming tests</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MEET THE TEAM SECTION -->
+    <section id="meet-the-team" class="tl-section">
+        <div class="tl-container">
+            <div class="tl-section-header">
+                <h2>Meet the team.</h2>
+                <p>The students behind UIUC Turbolearn.</p>
+            </div>
+
+            <div class="tl-features-grid">
+                <div class="tl-feature">
+                    <h3>Aiden D'Souza</h3>
+                    <p>
+                        <strong>Role:</strong> Frontend Developer<br>
+                        <strong>Major:</strong> Computer Science + Education<br><br>
+                        Built the homepage and focused on user experience design. 
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Ammar Jiruwala</h3>
+                    <p>
+                        <strong>Role:</strong> Backend Developer<br>
+                        <strong>Major:</strong> Computer Science<br><br>
+                        Developed the backend Flask routes, filtering and search functionality and database management.
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Mehull Girdhar</h3>
+                    <p>
+                        <strong>Role:</strong> <br>
+                        <strong>Major:</strong> Math + Computer Science<br><br>
+                        Implemented the AI note summarizer feature to help students 
+                        digest large amounts of content quickly.
+                    </p>
+                </div>
+                
+                <div class="tl-feature">
+                    <h3>Sriram Natarajan</h3>
+                    <p>
+                        <strong>Role:</strong> Project Manager<br>
+                        <strong>Major:</strong> Computer Science + Linguistics<br><br>
+                        Coordinated team efforts, managed timelines, and ensured 
+                        project goals aligned with user needs.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Project Credits Box -->
+            <div style="text-align: center; margin-top: 48px; padding: 32px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm);">
+                <p style="color: var(--text-secondary); margin: 0; font-size: 1rem; line-height: 1.7;">
+                    <strong style="color: var(--text-primary); font-family: var(--font-serif); font-size: 1.2rem; display: block; margin-bottom: 8px;">
+                        CS124 Honors Project · Fall 2025
+                    </strong>
+                    Built with Flask, Python, HTML/CSS/JavaScript<br>
+                    FA25-Group10 · University of Illinois Urbana-Champaign
+                </p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- FOOTER -->
+<footer class="tl-footer">
+    <div class="tl-container">
+        <div class="tl-footer-inner">
+            <div class="tl-footer-left">
+                <span class="tl-footer-brand">UIUC Turbolearn</span>
+                <span class="tl-footer-note">CS124 Honors · FA25-Group10</span>
+            </div>
+            <div class="tl-footer-links">
+                <a href="#features">Features</a>
+                <a href="#why-we-built">Why We Built This</a>
+                <a href="#meet-the-team">Meet the Team</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='theme-toggle.js') }}"></script>
+
+<!-- Optional: Add scroll effect to header -->
+<script>
+    window.addEventListener('scroll', function() {
+        const header = document.querySelector('.tl-header');
+        if (window.scrollY > 20) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+    });
+</script>
+
+</body>
+</html>
