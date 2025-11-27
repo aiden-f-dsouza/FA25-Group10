@@ -329,7 +329,7 @@
     <!-- Filter and Search Bar -->
     <!-- This form contains all filters: class, author, date range, search, and sort options -->
     <div class="filter-section">
-      <form method="get" action="/" class="filter-form">
+      <form method="get" action="/notes-feed" class="filter-form">
 
         <!-- Row 1: Main filters (Class, Author, Date Range, Sort) -->
         <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
@@ -475,7 +475,7 @@
     <div class="create-section">
       <div class="section-title">✍️ Create New Note</div>
 
-      <form method="POST" action="/">
+      <form method="POST" action="/notes-feed">
         <!-- Author name and note title (side by side on desktop) -->
         <div class="two">
           <input type="text" name="author" placeholder="Your name (optional)">
