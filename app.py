@@ -73,8 +73,8 @@ def next_id():
         return (NOTES[-1]["id"] + 1)
     else:
         return 1
-# reroutes to the main page
-@app.route("/", methods=["GET", "POST"])
+# main notes page route
+@app.route("/notes-feed", methods=["GET", "POST"])
 def index():
     # gives server information of any post to be made 
     if request.method == "POST":
@@ -199,7 +199,7 @@ def delete_note(note_id):
     # Redirect back to the main page
     return redirect(url_for("index"))
 
-@app.route("/home")
+@app.route("/")
 def home():
     return render_template("homev3.html")
 
