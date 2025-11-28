@@ -761,9 +761,25 @@
         <div class="section-header-row">
           <h2 class="section-heading">📚 Posted Notes</h2>
           
-          <div style="display: flex; gap: 12px; align-items: center;">
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <!-- Note count -->
             <div class="note-count">{{ total }} notes</div>
+            
+            <!-- Date filter dropdown -->
+            <form method="get" action="/notes-feed" style="margin: 0;">
+              <!-- Preserve current filters -->
+              <input type="hidden" name="search" value="{{ search_query or '' }}">
+              <input type="hidden" name="class_filter" value="{{ selected_filter or 'All' }}">
+              <input type="hidden" name="author_filter" value="{{ author_filter or 'All' }}">
+              <input type="hidden" name="sort_by" value="{{ sort_by or 'recent' }}">
+              
+              <select name="date_filter" onchange="this.form.submit()">
+                <option value="All" {% if date_filter == "All" %}selected{% endif %}>All Time</option>
+                <option value="Today" {% if date_filter == "Today" %}selected{% endif %}>Today</option>
+                <option value="Week" {% if date_filter == "Week" %}selected{% endif %}>This Week</option>
+                <option value="Month" {% if date_filter == "Month" %}selected{% endif %}>This Month</option>
+              </select>
+            </form>
             
             <!-- Sort dropdown -->
             <form method="get" action="/notes-feed" style="margin: 0;">
