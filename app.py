@@ -7,7 +7,7 @@ from supabase import create_client, Client
 import os
 import uuid
 
-# ===== FLASK APP CONFIGURATION =====
+# FLASK APP CONFIGURATION
 # Load environment variables from .env file
 load_dotenv()
 
@@ -150,7 +150,7 @@ def index():
             # We need to commit here so the note gets an ID before we can attach files
             db.session.commit()
 
-            # HANDLE FILE UPLOADS TO SUPABASE STORAGE
+            # HANDLE FILE UPLOADS
             # Check if any files were uploaded with the form
             if 'attachments' in request.files:
                 # Get all uploaded files (user can upload multiple at once)
@@ -170,25 +170,14 @@ def index():
                         # Format: uuid_originalname.ext
                         unique_filename = f"{uuid.uuid4()}_{original_filename}"
 
-                        # Read file content into bytes for upload
-                        file_content = file.read()
-
-                        # Upload file to Supabase Storage bucket
-                        # Bucket name: 'note-attachments' (created in Supabase dashboard)
-                        storage_path = f"{new_note.id}/{unique_filename}"  # Organize by note ID
-                        supabase.storage.from_("note-attachments").upload(
-                            path=storage_path,
-                            file=file_content,
-                            file_options={"content-type": file.content_type}
-                        )
-
-                        # Get the public URL for the uploaded file
-                        file_url = supabase.storage.from_("note-attachments").get_public_url(storage_path)
+                        # Save the file to the uploads directory
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                        file.save(file_path)
 
                         # Create an Attachment record in the database
                         attachment = Attachment(
                             note_id=new_note.id,  # Link to the note we just created
-                            filename=file_url,  # Store the Supabase Storage URL
+                            filename=unique_filename,  # The UUID-based filename on disk
                             original_filename=original_filename,  # Keep original name for display
                             file_type=file_ext  # Store file extension
                         )
@@ -320,17 +309,13 @@ def delete_note(note_id):
     # Find the note in the database by its ID
     note = Note.query.get_or_404(note_id)
 
-    # Delete all associated files from Supabase Storage
+    # Delete all associated files from the filesystem
     for attachment in note.attachments:
-        # Extract the storage path from the URL
-        # URL format: https://xxx.supabase.co/storage/v1/object/public/note-attachments/{path}
-        # We need the path part: {note_id}/{filename}
-        try:
-            storage_path = f"{note_id}/{attachment.filename.split('/')[-1]}"
-            supabase.storage.from_("note-attachments").remove([storage_path])
-        except Exception as e:
-            # Log the error but continue with deletion
-            print(f"Error deleting file from Supabase Storage: {e}")
+        # Build the file path
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], attachment.filename)
+        # Check if file exists and delete it
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
     # Delete the note from the database
     # The cascade relationship will automatically delete all attachment records
@@ -348,9 +333,20 @@ def download_file(attachment_id):
     # Find the attachment in the database
     attachment = Attachment.query.get_or_404(attachment_id)
 
-    # The filename field contains the full Supabase Storage public URL
-    # Redirect the user to that URL to download the file
-    return redirect(attachment.filename)
+    # Security check: ensure the file path doesn't contain directory traversal attempts
+    # The secure_filename function already prevented this during upload, but double-check
+    if '..' in attachment.filename or attachment.filename.startswith('/'):
+        return "Invalid file path", 400
+
+    # Send the file from the uploads directory
+    # as_attachment=True forces download instead of displaying in browser
+    # download_name sets the filename user sees (original filename, not the UUID one)
+    return send_from_directory(
+        app.config['UPLOAD_FOLDER'],
+        attachment.filename,
+        as_attachment=True,
+        download_name=attachment.original_filename
+    )
 
 
 # DATABASE AND UPLOADS INITIALIZATION
@@ -376,5 +372,4 @@ if __name__ == "__main__":
     # Initialize the app (create database and uploads folder)
     init_app()
     # Start the Flask development server in debug mode
-    # Using port 5001 because port 5000 is often used by AirPlay on macOS
-    app.run(debug=True, port=5001)
+    app.run(debug=True)

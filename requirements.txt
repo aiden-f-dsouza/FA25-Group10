@@ -3,4 +3,4 @@ Flask-SQLAlchemy
 selenium
 supabase
 python-dotenv
-psycopg[binary]
+psycopg2-binary
