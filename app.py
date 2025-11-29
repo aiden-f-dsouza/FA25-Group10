@@ -6,6 +6,8 @@ from werkzeug.utils import secure_filename
 from supabase import create_client, Client
 import os
 import uuid
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # FLASK APP CONFIGURATION
 # Load environment variables from .env file
@@ -38,11 +40,16 @@ ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'txt', 
 # Initialize SQLAlchemy database with our app
 db = SQLAlchemy(app)
 
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login' # Redirect to login page if not authenticated
+
 # List of available class codes for the dropdown filter
 CLASSES = ["CS124", "CS128", "CS173", "MATH221", "MATH231", "ENG100", "CS100", "RHET105", "PHY211", "PHY212"]
 
 
-# ===== DATABASE MODELS =====
+# DATABASE MODELS
 # These classes define the structure of our database tables
 
 class Note(db.Model):
@@ -64,6 +71,9 @@ class Note(db.Model):
 
     # Which class this note belongs to (e.g., "CS124")
     class_code = db.Column(db.String(50), nullable=False)
+
+    # Foreign key linking note to user(nullable=True means old notes without users are OK)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     # When this note was created (automatically set to current time)
     created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -105,6 +115,67 @@ class Attachment(db.Model):
         """String representation for debugging"""
         return f'<Attachment {self.id}: {self.original_filename}>'
 
+class User(UserMixin, db.Model):
+    """
+    User model - represents a registered user
+    UserMixin provides default implementations for Flask-Login
+    """
+    __tablename__ = 'users'
+
+    #Primary key - unique identifier for each user (auto-increments)
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Username - must be unique across all users
+    username = db.Column(db.String(100), unique=True, nullable=False)
+
+    # Email - msut be unique across all users
+    email = db.Column(db.String(255), unique=True, nullable=False)
+
+    # Password hash - NEVER stores plain passwords!
+    password_hash = db.Column(db.String(255), nullable=False)
+
+    # When this user account was created
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # Relationship: One user can have many notes
+    # The 'backref' creates a reverse reference from Note back to User
+    notes = db.relationship('Note', backref='user', lazy=True)
+
+    def set_password(self, password):
+        """
+        Hash a password and store it
+        Args:
+            password: The plain text password to hash
+        """
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """
+        Check if provided password matches the stored hash
+        Args:
+            password: The plain text password to check
+        Returns:
+            True if password matches, False otherwise
+        """
+        return check_password_hash(self.password_hash, password)
+    
+    def __repr__(self):
+        """String representation for debugging"""
+        return f'<User {self.username}>'
+    
+# Flask-Login user loader
+# This tells Flask-Login how to load a user from the session
+@login_manager.user_loader
+def load_user(user_id):
+    """
+    Required by Flask-Login
+    Loads user from databse using the user_id stored in session
+    Args:
+        user_id: The ID of the user to load
+    Returns:
+        User object or None if not found
+    """
+    return User.query.get(int(user_id))
 
 # HELPER FUNCTIONS
 def allowed_file(filename):
@@ -118,7 +189,6 @@ def allowed_file(filename):
     # Check if filename has a dot AND the extension (after the dot) is allowed
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
 # ROUTES
 # These functions handle different URLs and user requests
 
@@ -128,8 +198,11 @@ def index():
     # HANDLING NOTE CREATION (POST REQUEST)
     # This runs when user submits the "Create Note" form
     if request.method == "POST":
+        # Check if user is logged in - only authenticated users can create notes
+        if not current_user.is_authenticated:
+            return redirect(url_for("login"))
+
         # Get form data, with fallback defaults if fields are empty
-        author = request.form.get("author", "").strip() or "Anonymous"
         title = request.form.get("title", "").strip() or "Untitled"
         body = request.form.get("body", "").strip()
         selected_class = request.form.get("class", "General")
@@ -137,11 +210,13 @@ def index():
         # Only create note if body is not empty
         if body:
             # Create a new Note object with the form data
+            # Author is automatically set to the logged-in user's username
             new_note = Note(
-                author=author,
+                author=current_user.username,
                 title=title,
                 body=body,
-                class_code=selected_class
+                class_code=selected_class,
+                user_id=current_user.id
             )
 
             # Add the note to the database session (prepares it to be saved)
@@ -284,16 +359,21 @@ def index():
 # EDIT NOTE ROUTE
 # Handles updating an existing note
 @app.route("/edit/<int:note_id>", methods=["POST"])
+@login_required
 def edit_note(note_id):
     # Find the note in the database by its ID
     note = Note.query.get_or_404(note_id)
+
+    # Security check: Only the note owner can edit it
+    if note.user_id != current_user.id:
+        return "Unauthorized", 403
 
     # Update the note's fields with new data from the form
     # Use .get() with fallback to preserve original values if field is empty
     note.title = request.form.get("title", "").strip() or note.title
     note.body = request.form.get("body", "").strip() or note.body
-    note.author = request.form.get("author", "").strip() or note.author
     note.class_code = request.form.get("class", note.class_code)
+    # Note: author is NOT updated - it stays as the original user
 
     # Save the changes to the database
     db.session.commit()
@@ -305,9 +385,14 @@ def edit_note(note_id):
 # DELETE NOTE ROUTE
 # Handles removing a note from the system (also deletes associated files)
 @app.route("/delete/<int:note_id>", methods=["POST"])
+@login_required
 def delete_note(note_id):
     # Find the note in the database by its ID
     note = Note.query.get_or_404(note_id)
+
+    # Security check: Only the note owner can delete it
+    if note.user_id != current_user.id:
+        return "Unauthorized", 403
 
     # Delete all associated files from the filesystem
     for attachment in note.attachments:
@@ -325,6 +410,74 @@ def delete_note(note_id):
     # Redirect back to the main page
     return redirect(url_for("index"))
 
+# AUTHENTICATION ROUTES
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    """Handle user registration"""
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        # Validation
+        if not username or not email or not password:
+            return render_template("signup.html", error="All fields are required")
+        
+        # Check if username already exists
+        if User.query.filter_by(username=username).first():
+            return render_template("signup.html", error="Username already taken")
+        
+        # Check if email already exists
+        if User.query.filter_by(email=email).first():
+            return render_template("signup.html", error="Email already registered")
+        
+        # Create new user
+        new_user = User(username=username, email=email)
+        new_user.set_password(password)
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        # Log the user in automatically
+        login_user(new_user)
+
+        return redirect(url_for("index"))
+    
+    return render_template("signup.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Handle user login"""
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        # Find user
+        user = User.query.filter_by(username=username).first()
+
+        # Check credentials
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for("index"))
+        else:
+            return render_template("login.html", error="Invalid username or password")
+    
+    return render_template("login.html")
+
+@app.route("/logout")
+@login_required
+def logout():
+    """Handle user logout"""
+    logout_user()
+    return redirect(url_for("login"))
+
+@app.route("/profile")
+@login_required
+def profile():
+    """Show user profile page"""
+    # get user's notes
+    user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.id.desc()).all()
+    return render_template("profile.html", user=current_user, notes=user_notes)
 
 # FILE DOWNLOAD ROUTE
 # Handles secure file downloads for attachments
@@ -371,5 +524,5 @@ def init_app():
 if __name__ == "__main__":
     # Initialize the app (create database and uploads folder)
     init_app()
-    # Start the Flask development server in debug mode
-    app.run(debug=True)
+    # Start the Flask development server in debug mode on port 5001
+    app.run(debug=True, port=5001)

@@ -324,6 +324,18 @@
 </head>
 <body>
   <div class="container">
+    <!-- User Navigation Bar -->
+    <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 0 20px 0; gap: 15px;">
+      {% if current_user.is_authenticated %}
+        <span style="color: #888;">Welcome, <a href="{{ url_for('profile') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">{{ current_user.username }}</a></span>
+        <a href="{{ url_for('logout') }}" style="color: #f44336; text-decoration: none; font-weight: 600;">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">Login</a>
+        <span style="color: #888;">|</span>
+        <a href="{{ url_for('signup') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">Sign Up</a>
+      {% endif %}
+    </div>
+
     <div class="title">📚 Class Notes</div>
  
     <!-- Filter and Search Bar -->
@@ -443,9 +455,9 @@
             <input type="text" name="title" value="{{ n.title }}" placeholder="Note title" required style="width: 100%;">
           </div>
 
-          <!-- Author input for editing -->
-          <div style="margin-bottom: 12px;">
-            <input type="text" name="author" value="{{ n.author }}" placeholder="Author name" style="width: 100%;">
+          <!-- Author is fixed and cannot be changed (shows current author) -->
+          <div style="margin-bottom: 12px; color: #888; font-size: 14px;">
+            Author: {{ n.author }}
           </div>
 
           <!-- Class selector for editing -->
@@ -499,9 +511,8 @@
 
       <!-- enctype="multipart/form-data" is REQUIRED for file uploads -->
       <form method="POST" action="/" enctype="multipart/form-data">
-        <!-- Author name and note title (side by side on desktop) -->
-        <div class="two">
-          <input type="text" name="author" placeholder="Your name (optional)">
+        <!-- Note title input (author is automatically set to logged-in user) -->
+        <div>
           <input type="text" name="title" placeholder="Note title">
         </div>
 

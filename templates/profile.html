@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - {{ user.username }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #101522;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .user-info {
+            background-color: #1a1f35;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .user-info h2 {
+            margin-top: 0;
+        }
+        .user-info p {
+            margin: 10px 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #555;
+        }
+        .btn-secondary:hover {
+            background-color: #666;
+        }
+        .btn-logout {
+            background-color: #f44336;
+        }
+        .btn-logout:hover {
+            background-color: #da190b;
+        }
+        .notes-section h2 {
+            margin-bottom: 20px;
+        }
+        .note {
+            background-color: #1a1f35;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .note h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .note p {
+            margin: 10px 0;
+        }
+        .note-meta {
+            color: #888;
+            font-size: 14px;
+        }
+        .no-notes {
+            background-color: #1a1f35;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>My Profile</h1>
+            <div>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Notes</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
+            </div>
+        </div>
+
+        <div class="user-info">
+            <h2>{{ user.username }}</h2>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Member since:</strong> {{ user.created_at.strftime('%B %d, %Y') }}</p>
+            <p><strong>Total notes:</strong> {{ notes|length }}</p>
+        </div>
+
+        <div class="notes-section">
+            <h2>My Notes</h2>
+            {% if notes %}
+                {% for note in notes %}
+                <div class="note">
+                    <h3>{{ note.title }}</h3>
+                    <p class="note-meta">
+                        <strong>Class:</strong> {{ note.class_code }} |
+                        <strong>Created:</strong> {{ note.created.strftime('%B %d, %Y at %I:%M %p') }}
+                    </p>
+                    <p>{{ note.body[:200] }}{% if note.body|length > 200 %}...{% endif %}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-notes">
+                    <p>You haven't created any notes yet.</p>
+                    <a href="{{ url_for('index') }}" class="btn">Create Your First Note</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
