@@ -1,0 +1,664 @@
+/* ============================================
+   NOTES PAGE CUSTOM STYLES
+   Extends turbolearn-darkmode.css base theme
+   ============================================ */
+
+/* ===== MAJOR CHANGE #3: CSS Custom Properties (Variables) ===== */
+/* BEFORE: Colors were hardcoded like #1a1f2e, #667eea, rgba(26, 31, 51, 0.6) */
+/* NOW: Uses CSS variables that automatically change with light/dark mode:
+   - var(--bg-paper): Main background
+   - var(--bg-card): Card backgrounds
+   - var(--text-primary): Main text color
+   - var(--accent-terracotta): Primary accent color
+   - var(--border-light): Subtle borders
+   - var(--shadow-md): Consistent shadows
+   These variables are defined in turbolearn-darkmode.css and change values
+   when data-theme attribute switches between "light" and "dark"
+*/
+
+/* Additional styles specific to the notes page that extend turbolearn-darkmode.css */
+
+/* === LAYOUT & CONTAINERS === */
+
+/* Main page container */
+.notes-page {
+  min-height: 100vh;
+  padding: 40px 0;
+  background: var(--bg-paper);
+}
+
+/* === TYPOGRAPHY === */
+
+/* Page title */
+/* CHANGE: Now uses var(--font-serif) and var(--text-primary) instead of hardcoded values */
+/* CHANGE: Uses clamp() for responsive font sizing */
+.notes-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 900;
+  margin-bottom: 32px;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.section-heading {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+/* Note title */
+/* CHANGE: Uses serif font from theme system */
+.note-title {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 22px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+/* === FILTER SECTION === */
+
+/* Filter section card */
+/* CHANGE: Background uses var(--bg-card) instead of rgba(26, 31, 51, 0.6) */
+/* CHANGE: Border uses var(--border-light) instead of rgba(102, 126, 234, 0.2) */
+/* CHANGE: Shadow uses var(--shadow-md) instead of hardcoded box-shadow */
+/* CHANGE: Border radius uses var(--radius-lg) for consistency */
+.filter-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 32px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
+}
+
+/* Filter form layout */
+.filter-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
+}
+
+/* === FORM CONTROLS === */
+
+/* Form controls */
+/* CHANGE: All form elements now use CSS variables for colors */
+/* BEFORE: border: 1px solid rgba(102, 126, 234, 0.3) */
+/* NOW: border: 1px solid var(--border-light) */
+/* BEFORE: background: rgba(23, 27, 46, 0.8) */
+/* NOW: background: var(--bg-paper-dark) */
+select, input, textarea {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-paper-dark);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: var(--font-sans);
+}
+
+select:hover, input:hover, textarea:hover {
+  border-color: var(--border-medium);
+}
+
+/* CHANGE: Focus state now uses accent color with consistent shadow */
+select:focus, input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-terracotta);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+select {
+  min-width: 150px;
+  cursor: pointer;
+}
+
+/* Search input */
+.search-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Header search styling */
+.header-search-form {
+  margin-right: 16px;
+}
+
+.header-search-input {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-paper-dark);
+  color: var(--text-primary);
+  min-width: 250px;
+  font-size: 14px;
+}
+
+.header-search-input:focus {
+  outline: none;
+  border-color: var(--accent-terracotta);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Form layout */
+form textarea {
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+form input, form select {
+  width: 100%;
+}
+
+form .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media(max-width: 900px) {
+  form .two {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* === BUTTONS === */
+
+/* Buttons */
+/* CHANGE: Button styling now uses accent colors from theme */
+/* BEFORE: background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) */
+/* NOW: background: var(--accent-terracotta) - simpler, theme-aware */
+.btn-search {
+  background: var(--accent-terracotta);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+
+.btn-search:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-search:active {
+  transform: translateY(0);
+}
+
+/* Action buttons */
+.btn-small {
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+/* CHANGE: Edit button now uses accent-terracotta instead of purple gradient */
+.btn-edit {
+  background: var(--accent-terracotta);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-edit:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* CHANGE: Delete button uses consistent red (not gradient) */
+/* Kept as hardcoded red since it's a universal danger color */
+.btn-delete {
+  background: #dc2626;
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-delete:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* CHANGE: Cancel button uses theme neutrals */
+.btn-cancel {
+  background: var(--bg-paper-dark);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+}
+
+.btn-cancel:hover {
+  background: var(--bg-paper);
+  color: var(--text-primary);
+}
+
+/* === NOTE COUNT BADGE === */
+
+/* Note count badge */
+/* CHANGE: Uses theme colors instead of hardcoded purple */
+.note-count {
+  background: var(--bg-paper-dark);
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  border: 1px solid var(--border-light);
+  margin-left: auto;
+}
+
+/* === NOTE CARDS === */
+
+/* Note cards */
+/* CHANGE: Card backgrounds and borders now theme-aware */
+/* CHANGE: Hover effects use consistent shadow variables */
+.card {
+  background: var(--bg-card);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+/* Note metadata */
+.note-meta {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* CHANGE: Meta tags now use accent color for consistency */
+.meta-tag {
+  background: var(--bg-paper-dark);
+  padding: 4px 12px;
+  border-radius: var(--radius-lg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-terracotta);
+  border: 1px solid var(--border-light);
+}
+
+/* Note body */
+.note-body {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+/* === NOTE ACTIONS & EDITING === */
+
+/* Note actions */
+.note-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Edit form */
+.edit-form {
+  display: none;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-paper-dark);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.edit-form.active {
+  display: block;
+}
+
+.note-content.editing {
+  display: none;
+}
+
+/* === CREATE NOTE SECTION === */
+
+/* Create note section */
+.create-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-top: 40px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
+}
+
+/* === UTILITY === */
+
+/* Load more button container */
+.load-more-container {
+  text-align: center;
+  margin: 20px 0;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  color: var(--text-tertiary);
+  margin: 60px 0;
+  font-size: 16px;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* === MODAL === */
+
+/* ===== MODAL STYLES ===== */
+
+/* Modal overlay - dark background that covers entire page */
+.modal-overlay {
+  display: none; /* Hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Show modal when active class is added */
+.modal-overlay.active {
+  display: flex;
+}
+
+/* Modal content box */
+.modal-content {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
+  animation: modalSlideIn 0.3s ease;
+}
+
+/* Smooth slide-in animation */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.modal-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Close button (X) */
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+/* Modal body */
+.modal-body {
+  padding: 28px;
+}
+
+/* Form inside modal */
+.modal-body form input,
+.modal-body form select,
+.modal-body form textarea {
+  width: 100%;
+}
+
+.modal-body form textarea {
+  min-height: 140px;
+}
+
+/* === SECTION CARDS === */
+
+/* ===== NEW SECTION CARDS ===== */
+
+.section-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.course-select {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* === CHOICES.JS THEME CUSTOMIZATION === */
+
+/* ===== CHOICES.JS THEME CUSTOMIZATION ===== */
+
+.choices {
+  margin-bottom: 0;
+}
+
+/* Main dropdown container - FORCE theme colors */
+.choices__inner {
+  background: var(--bg-paper-dark) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-md);
+  color: var(--text-primary) !important;
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.choices__inner:hover {
+  border-color: var(--border-medium) !important;
+}
+
+.choices.is-focused .choices__inner,
+.choices.is-open .choices__inner {
+  border-color: var(--accent-terracotta) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+/* Dropdown menu */
+.choices__list--dropdown {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+}
+
+/* Individual dropdown items */
+.choices__list--dropdown .choices__item {
+  color: var(--text-primary) !important;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.choices__item--selectable {
+  transition: background 0.2s ease;
+}
+
+/* Highlighted item (hover/keyboard selection) */
+.choices__item--selectable.is-highlighted {
+  background: var(--accent-soft) !important;
+  color: var(--accent-terracotta) !important;
+}
+
+/* Search input inside dropdown */
+.choices__input {
+  background: var(--bg-paper-dark) !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 0;
+  font-size: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.choices__input::placeholder {
+  color: var(--text-tertiary) !important;
+  opacity: 1;
+}
+
+/* Dropdown arrow */
+.choices[data-type*='select-one']::after {
+  border-color: var(--text-secondary) transparent transparent transparent;
+  margin-top: -2px;
+}
+
+.choices[data-type*='select-one'].is-open::after {
+  border-color: transparent transparent var(--text-secondary) transparent;
+  margin-top: -7px;
+}
+
+/* No results message */
+.choices__item--choice.has-no-choices {
+  color: var(--text-tertiary) !important;
+  background: var(--bg-card) !important;
+}
+
+/* Selected value display */
+.choices__list--single .choices__item {
+  color: var(--text-primary) !important;
+}
+
+/* === RESPONSIVE === */
+
+/* Responsive */
+@media(max-width: 768px) {
+  .notes-title {
+    font-size: 32px;
+  }
+
+  .filter-section {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .note-actions {
+    flex-wrap: wrap;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  select {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .note-count {
+    margin-left: 0;
+  }
+
+  .header-search-form {
+    display: none;
+  }
+
+  .section-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .course-select {
+    min-width: auto;
+    width: 100%;
+  }
+}
