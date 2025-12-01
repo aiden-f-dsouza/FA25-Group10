@@ -86,8 +86,8 @@ def next_id():
         return (NOTES[-1]["id"] + 1)
     else:
         return 1
-# reroutes to the main page
-@app.route("/", methods=["GET", "POST"])
+# main notes page route
+@app.route("/notes-feed", methods=["GET", "POST"])
 def index():
     # gives server information of any post to be made 
     if request.method == "POST":
@@ -143,7 +143,7 @@ def index():
 
     # ===== STEP 5: Send everything to the template to display =====
     return render_template(
-        "index.html",
+        "indexv2.html",
         notes=notes_page,  # The paginated notes to display
         page=page,
         has_more=has_more,
@@ -246,9 +246,9 @@ def delete_note(note_id):
     # Redirect back to the main page
     return redirect(url_for("index"))
 
-@app.route("/home")
+@app.route("/")
 def home():
-    return render_template("homev2.html")
+    return render_template("homev3.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
