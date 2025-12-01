@@ -44,7 +44,7 @@
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         applyTheme(newTheme);
         
-        // Optional: Add a subtle animation or feedback
+        // animation on hover
         document.body.style.transition = 'none';
         setTimeout(() => {
             document.body.style.transition = '';
