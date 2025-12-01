@@ -411,8 +411,15 @@
  
     <!-- Filter and Search Bar -->
     <!-- This form contains all filters: class, author, date range, search, and sort options -->
+<<<<<<< HEAD
     <div class="filter-section">
       <form method="get" action="/notes-feed" class="filter-form">
+=======
+    <div id="filters" class="filter-section">
+      <form method="get" action="/" class="filter-form">
+        <!-- preserve tag filter when submitting other filters -->
+        <input type="hidden" name="tag_filter" value="{{ tag_filter or 'All' }}">
+>>>>>>> Lavender
 
         <!-- Row 1: Main filters (Class, Author, Date Range, Sort) -->
         <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
@@ -470,78 +477,19 @@
         </div>
 
       </form>
+      <!-- Tag cloud -->
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        {% for tag, count in tags[:30] %}
+          <a href="/?tag_filter={{ tag }}" class="meta-tag" style="text-decoration:none;">#{{ tag }} ({{ count }})</a>
+        {% endfor %}
+      </div>
     </div>
  
     <!-- Notes Feed -->
     <!-- Each note is displayed as a card with title, metadata, and content -->
     <div id="notes-feed" style="margin-top: 20px;">
     <div id="notes-container">
-    {% for n in notes %}
-    <div class="card">
-      <!-- Note content (visible by default, hidden when editing) -->
-      <div id="note-content-{{ n.id }}" class="note-content">
-        <!-- Note title (clickable headline) -->
-        <div class="note-title">{{ n.title }}</div>
-
-        <!-- Metadata tags (author, date, class as badges) -->
-        <div class="note-meta">
-          <span class="meta-tag">👤 {{ n.author }}</span>
-          <span class="meta-tag">📅 {{ n.created }}</span>
-          <span class="meta-tag">📚 {{ n.class }}</span>
-        </div>
-
-        <!-- Note content/body -->
-        <div class="note-body">{{ n.body }}</div>
-      </div>
-
-      <!-- Edit form (hidden by default, shown when edit button is clicked) -->
-      <div id="edit-form-{{ n.id }}" class="edit-form">
-        <form method="POST" action="/edit/{{ n.id }}">
-          <!-- Title input for editing -->
-          <div style="margin-bottom: 12px;">
-            <input type="text" name="title" value="{{ n.title }}" placeholder="Note title" required style="width: 100%;">
-          </div>
-
-          <!-- Author input for editing -->
-          <div style="margin-bottom: 12px;">
-            <input type="text" name="author" value="{{ n.author }}" placeholder="Author name" style="width: 100%;">
-          </div>
-
-          <!-- Class selector for editing -->
-          <div style="margin-bottom: 12px;">
-            <select name="class" style="width: 100%;">
-              {% for c in classes %}
-              <option value="{{ c }}" {% if c == n.class %}selected{% endif %}>{{ c }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Body textarea for editing -->
-          <div style="margin-bottom: 12px;">
-            <textarea name="body" placeholder="Note content" required style="width: 100%; min-height: 120px;">{{ n.body }}</textarea>
-          </div>
-
-          <!-- Action buttons for the edit form -->
-          <div style="display: flex; gap: 10px;">
-            <button type="submit" class="btn-small btn-edit">💾 Save Changes</button>
-            <button type="button" class="btn-small btn-cancel" onclick="toggleEdit('{{ n.id }}')">❌ Cancel</button> 
-           <!-- <button type="button" class="btn-small btn-cancel" onclick="toggleEdit({{ n.id }})">❌ Cancel</button> -->
-          </div>
-        </form>
-      </div>
-
-      <!-- Action buttons (Edit and Delete) -->
-      <div class="note-actions">
-        <!-- Edit button - toggles the edit form -->
-        <!--<button class="btn-small btn-edit" onclick="toggleEdit({{ n.id }})">✏️ Edit</button>-->  
-         <button class="btn-small btn-edit" onclick="toggleEdit('{{ n.id }}')">✏️ Edit</button>
-        <!-- Delete button - removes the note -->
-        <form method="POST" action="/delete/{{ n.id }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this note?');">
-          <button type="submit" class="btn-small btn-delete">🗑️ Delete</button>
-        </form>
-      </div>
-    </div>
-    {% endfor %}
+      {% include 'notes_fragment.html' %}
     </div>
     </div>
 
@@ -584,6 +532,11 @@
         <!-- Note content text area -->
         <div style="margin-top: 16px;">
           <textarea name="body" placeholder="Write your note..." required></textarea>
+        </div>
+
+        <!-- Tags input -->
+        <div style="margin-top: 12px;">
+          <input type="text" name="tags" placeholder="tags (comma-separated), e.g. exam, lecture">
         </div>
 
         <!-- Submit button (aligned to right) -->

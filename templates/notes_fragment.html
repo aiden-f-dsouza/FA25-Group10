@@ -8,6 +8,18 @@
       <span class="meta-tag">📚 {{ n.class }}</span>
       <span class="meta-tag">❤️ {{ n.likes or 0 }}</span>
       <span class="meta-tag">💬 {{ n.comments|length }}</span>
+      {# Tags badges on note #}
+      {% if n.tags %}
+        {% for tag in n.tags %}
+          <a href="/?tag_filter={{ tag }}" class="meta-tag" style="text-decoration:none;">#{{ tag }}</a>
+        {% endfor %}
+      {% endif %}
+      {# Hashtags badges on note #}
+      {% if n.hashtags %}
+        {% for ht in n.hashtags %}
+          <a href="/?tag_filter={{ ht }}" class="meta-tag" style="text-decoration:none; background:rgba(245,101,101,0.2); color:#c53030;">#{{ ht }}</a>
+        {% endfor %}
+      {% endif %}
     </div>
     <div class="note-body">{{ n.body }}</div>
   </div>
@@ -28,6 +40,8 @@
         </select>
       </div>
       <div style="margin-bottom: 12px;">
+        <!-- Tags input for editing (comma-separated) -->
+        <input type="text" name="tags" value="{{ n.tags|join(', ') }}" placeholder="tags (comma-separated)" style="width:100%;">
       </div>
       <div style="display: flex; gap: 10px;">
         <button type="submit" class="btn-small btn-edit">💾 Save Changes</button>
