@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AI Note Summarizer - UIUC Turbolearn</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='turbolearn-darkmode.css') }}">
+
+  <!-- Google Fonts: Merriweather (Serif) + Inter (Sans-serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--border-light);
+      border-top-color: var(--accent-terracotta);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-message {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-secondary);
+      display: none;
+    }
+
+    .loading-message.show {
+      display: block;
+    }
+
+    .error-message {
+      background: rgba(198, 107, 77, 0.1);
+      border: 1px solid var(--accent-terracotta);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      color: var(--accent-terracotta);
+      margin-top: 16px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .summary-output {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      padding: 24px;
+      border-radius: var(--radius-md);
+      margin-top: 24px;
+      display: none;
+      box-shadow: var(--shadow-md);
+    }
+
+    .summary-output.show {
+      display: block;
+    }
+
+    .summary-title {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-terracotta);
+      margin-bottom: 16px;
+    }
+
+    .summary-text {
+      line-height: 1.8;
+      color: var(--text-primary);
+      font-size: 15px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .summary-text::first-line {
+      margin-top: 0;
+    }
+
+    .char-count {
+      text-align: right;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .info-box {
+      background: rgba(122, 155, 118, 0.1);
+      border: 1px solid var(--accent-sage);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-medium);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: var(--font-sans);
+      resize: vertical;
+      line-height: 1.6;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent-terracotta);
+      box-shadow: 0 0 0 3px rgba(198, 107, 77, 0.1);
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header with theme toggle -->
+  <header class="tl-header">
+    <div class="tl-container">
+      <nav class="tl-nav">
+        <a href="{{ url_for('home') }}" class="tl-logo">
+          <div class="tl-logo-mark">TL</div>
+          <div class="tl-logo-text">
+            <span class="tl-logo-main">UIUC Turbolearn</span>
+            <span class="tl-logo-sub">AI Note Summarizer</span>
+          </div>
+        </a>
+
+        <div class="tl-nav-actions">
+          <a href="/notes-feed" style="color: var(--text-primary); text-decoration: none; padding: 8px 16px; margin: 0 8px; white-space: nowrap;">📝 Notes Feed</a>
+
+          <button class="theme-toggle" aria-label="Toggle dark mode">
+            <span class="moon-icon">🌙</span>
+            <span class="sun-icon">☀️</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <div class="notes-page">
+    <div class="tl-container">
+
+      <div class="info-box" style="margin-top: 24px;">
+        💡 This tool uses free AI to summarize your notes. Simply paste your text below and click "Summarize" to get a concise version. Perfect for condensing lecture notes or study materials!
+      </div>
+
+      <!-- Main Input Section -->
+      <div class="section-card">
+        <h2 class="section-heading">📝 Your Notes</h2>
+
+        <form id="summarizer-form" style="margin-top: 24px;">
+          <textarea
+            id="note-input"
+            name="notes"
+            placeholder="Paste your notes here... (e.g., lecture notes, textbook excerpts, study materials)"
+            required
+          ></textarea>
+          <div class="char-count"><span id="char-count">0</span> characters</div>
+
+          <button type="submit" id="summarize-btn" class="btn btn-accent" style="margin-top: 16px; width: 100%;">
+            Summarize Notes
+          </button>
+        </form>
+
+        <div class="loading-message" id="loading">
+          <div class="loading-spinner"></div>
+          Generating summary... This may take a moment.
+        </div>
+
+        <div class="error-message" id="error-msg"></div>
+      </div>
+
+      <!-- Summary Output Section -->
+      <div class="summary-output" id="summary-output">
+        <div class="summary-title">📄 Summary</div>
+        <div class="summary-text" id="summary-text"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Theme toggle script -->
+  <script src="{{ url_for('static', filename='theme-toggle.js') }}"></script>
+
+  <!-- Summarizer functionality -->
+  <script>
+    const form = document.getElementById('summarizer-form');
+    const noteInput = document.getElementById('note-input');
+    const charCount = document.getElementById('char-count');
+    const loading = document.getElementById('loading');
+    const errorMsg = document.getElementById('error-msg');
+    const summaryOutput = document.getElementById('summary-output');
+    const summaryText = document.getElementById('summary-text');
+    const submitBtn = document.getElementById('summarize-btn');
+
+    noteInput.addEventListener('input', function() {
+      charCount.textContent = noteInput.value.length;
+    });
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const notes = noteInput.value.trim();
+      if (!notes) {
+        showError('Please enter some notes to summarize.');
+        return;
+      }
+
+      loading.classList.add('show');
+      errorMsg.classList.remove('show');
+      summaryOutput.classList.remove('show');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Summarizing...';
+
+      try {
+        const response = await fetch('/api/summarize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ notes: notes })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          summaryText.textContent = data.summary;
+          summaryOutput.classList.add('show');
+        } else {
+          showError(data.error || 'Failed to generate summary. Please try again.');
+        }
+      } catch (error) {
+        showError('Network error. Please check your connection and try again.');
+      } finally {
+        loading.classList.remove('show');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Summarize Notes';
+      }
+    });
+
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.classList.add('show');
+    }
+  </script>
+</body>
+</html>

@@ -48,15 +48,18 @@
         <div class="tl-nav-actions">
           <!-- Search bar in header -->
           <form method="get" action="/notes-feed" class="header-search-form">
-            <input 
-              type="text" 
-              name="search" 
+            <input
+              type="text"
+              name="search"
               class="header-search-input"
-              placeholder="🔍 Search notes..." 
+              placeholder="🔍 Search notes..."
               value="{{ search_query or '' }}"
             >
           </form>
-        
+
+          <!-- AI Summarizer link -->
+          <a href="/summarizer" style="color: var(--tl-text-primary); text-decoration: none; padding: 8px 16px; margin: 0 8px; white-space: nowrap;">AI Summarizer</a>
+
           <!-- Theme toggle -->
           <button class="theme-toggle" aria-label="Toggle dark mode">
             <span class="moon-icon">🌙</span>
