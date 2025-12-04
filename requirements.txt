@@ -4,4 +4,4 @@ selenium
 supabase
 python-dotenv
 psycopg2-binary
-Flask-Login
+flask-supabase

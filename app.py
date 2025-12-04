@@ -6,8 +6,7 @@ from werkzeug.utils import secure_filename
 from supabase import create_client, Client
 import os
 import uuid
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 # FLASK APP CONFIGURATION
 # Load environment variables from .env file
@@ -40,11 +39,6 @@ ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'txt', 
 # Initialize SQLAlchemy database with our app
 db = SQLAlchemy(app)
 
-# Initialize Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login' # Redirect to login page if not authenticated
-
 # List of available class codes for the dropdown filter
 CLASSES = ["CS124", "CS128", "CS173", "MATH221", "MATH231", "ENG100", "CS100", "RHET105", "PHY211", "PHY212"]
 
@@ -72,8 +66,8 @@ class Note(db.Model):
     # Which class this note belongs to (e.g., "CS124")
     class_code = db.Column(db.String(50), nullable=False)
 
-    # Foreign key linking note to user(nullable=True means old notes without users are OK)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    # Foreign key linking note to Supabase auth user (UUID string)
+    user_id = db.Column(db.String(36), nullable=False)
 
     # When this note was created (automatically set to current time)
     created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -115,67 +109,84 @@ class Attachment(db.Model):
         """String representation for debugging"""
         return f'<Attachment {self.id}: {self.original_filename}>'
 
-class User(UserMixin, db.Model):
+# AUTHENTICATION HELPER FUNCTIONS
+
+def login_required(f):
     """
-    User model - represents a registered user
-    UserMixin provides default implementations for Flask-Login
+    Decorator to protect routes that require authentication
+    Checks if user has a valid Supabase session
     """
-    __tablename__ = 'users'
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Get the access token from session cookie
+        access_token = request.cookies.get('access_token')
 
-    #Primary key - unique identifier for each user (auto-increments)
-    id = db.Column(db.Integer, primary_key=True)
+        if not access_token:
+            # No token found, redirect to login
+            return redirect(url_for('login'))
 
-    # Username - must be unique across all users
-    username = db.Column(db.String(100), unique=True, nullable=False)
+        try:
+            # Verify the token with Supabase
+            user = supabase.auth.get_user(access_token)
+            if not user:
+                return redirect(url_for('login'))
+        except Exception as e:
+            # Token is invalid or expired
+            return redirect(url_for('login'))
 
-    # Email - msut be unique across all users
-    email = db.Column(db.String(255), unique=True, nullable=False)
+        return f(*args, **kwargs)
+    return decorated_function
 
-    # Password hash - NEVER stores plain passwords!
-    password_hash = db.Column(db.String(255), nullable=False)
+class UserWrapper:
+    """Wrapper class to add is_admin attribute to Supabase user"""
+    def __init__(self, supabase_user, is_admin=False):
+        self._user = supabase_user
+        self.is_admin = is_admin
 
-    # When this user account was created
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    def __getattr__(self, name):
+        # Delegate attribute access to the wrapped user object
+        return getattr(self._user, name)
 
-    # Relationship: One user can have many notes
-    # The 'backref' creates a reverse reference from Note back to User
-    notes = db.relationship('Note', backref='user', lazy=True)
+    def __bool__(self):
+        # Make sure the wrapper evaluates to True if user exists
+        return self._user is not None
 
-    def set_password(self, password):
-        """
-        Hash a password and store it
-        Args:
-            password: The plain text password to hash
-        """
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        """
-        Check if provided password matches the stored hash
-        Args:
-            password: The plain text password to check
-        Returns:
-            True if password matches, False otherwise
-        """
-        return check_password_hash(self.password_hash, password)
-    
-    def __repr__(self):
-        """String representation for debugging"""
-        return f'<User {self.username}>'
-    
-# Flask-Login user loader
-# This tells Flask-Login how to load a user from the session
-@login_manager.user_loader
-def load_user(user_id):
+def get_current_user():
     """
-    Required by Flask-Login
-    Loads user from databse using the user_id stored in session
-    Args:
-        user_id: The ID of the user to load
+    Get the currently logged-in user from Supabase
     Returns:
-        User object or None if not found
+        UserWrapper object with is_admin attribute, or None if not authenticated
     """
-    return User.query.get(int(user_id))
+    access_token = request.cookies.get('access_token')
+    if not access_token:
+        print("DEBUG: No access_token cookie found")
+        return None
+
+    try:
+        response = supabase.auth.get_user(access_token)
+        if response and response.user:
+            user = response.user
+            print(f"DEBUG: User logged in: {user.email}, ID: {user.id}")
+
+            # Fetch admin status from profiles table
+            is_admin = False
+            try:
+                profile = supabase.table('profiles').select('is_admin').eq('id', user.id).execute()
+                if profile.data and len(profile.data) > 0:
+                    is_admin = profile.data[0].get('is_admin', False)
+                    print(f"DEBUG: User is_admin: {is_admin}")
+                else:
+                    print("DEBUG: No profile found, setting is_admin=False")
+            except Exception as e:
+                print(f"DEBUG: Error fetching profile: {e}")
+
+            # Return wrapped user with is_admin attribute
+            return UserWrapper(user, is_admin)
+        print("DEBUG: No user found in response")
+        return None
+    except Exception as e:
+        print(f"DEBUG: Error in get_current_user: {e}")
+        return None
 
 # HELPER FUNCTIONS
 def allowed_file(filename):
@@ -193,16 +204,23 @@ def allowed_file(filename):
 # These functions handle different URLs and user requests
 
 # Main page route - handles both displaying notes (GET) and creating new notes (POST)
+# No @login_required decorator - anonymous users can view notes
 @app.route("/", methods=["GET", "POST"])
 def index():
+    print("===== INDEX ROUTE CALLED =====")
     # HANDLING NOTE CREATION (POST REQUEST)
     # This runs when user submits the "Create Note" form
     if request.method == "POST":
-        # Check if user is logged in - only authenticated users can create notes
-        if not current_user.is_authenticated:
-            return redirect(url_for("login"))
+        # Get the current user from Supabase
+        # Only logged-in users can create notes
+        current_user = get_current_user()
+        if not current_user:
+            # Redirect anonymous users to login if they try to create a note
+            return redirect(url_for('login'))
 
         # Get form data, with fallback defaults if fields are empty
+        # Author is automatically set to the logged-in user's email
+        author = current_user.email
         title = request.form.get("title", "").strip() or "Untitled"
         body = request.form.get("body", "").strip()
         selected_class = request.form.get("class", "General")
@@ -210,13 +228,12 @@ def index():
         # Only create note if body is not empty
         if body:
             # Create a new Note object with the form data
-            # Author is automatically set to the logged-in user's username
             new_note = Note(
-                author=current_user.username,
+                author=author,
                 title=title,
                 body=body,
                 class_code=selected_class,
-                user_id=current_user.id
+                user_id=current_user.id  # Link to Supabase auth user
             )
 
             # Add the note to the database session (prepares it to be saved)
@@ -343,7 +360,10 @@ def index():
     # Query the database to get all distinct author names
     unique_authors = sorted([author[0] for author in db.session.query(Note.author).distinct().all()])
 
-    # STEP 5: Send everything to the template to display
+    # STEP 5: Get current user from Supabase
+    current_user = get_current_user()
+
+    # STEP 6: Send everything to the template to display
     return render_template(
         "index.html",
         notes=filtered_notes,  # The filtered and sorted notes to display
@@ -353,7 +373,8 @@ def index():
         author_filter=author_filter,  # Currently selected author filter
         date_filter=date_filter,  # Currently selected date range
         sort_by=sort_by,  # Current sort option
-        authors=unique_authors  # List of all authors for the dropdown
+        authors=unique_authors,  # List of all authors for the dropdown
+        current_user=current_user  # Current Supabase user
     )
 
 # EDIT NOTE ROUTE
@@ -361,21 +382,66 @@ def index():
 @app.route("/edit/<int:note_id>", methods=["POST"])
 @login_required
 def edit_note(note_id):
+    # Get current user
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for('login'))
+
     # Find the note in the database by its ID
     note = Note.query.get_or_404(note_id)
 
-    # Security check: Only the note owner can edit it
-    if note.user_id != current_user.id:
-        return "Unauthorized", 403
+    # Permission check: User must own the note OR be an admin
+    if note.user_id != current_user.id and not current_user.is_admin:
+        # User doesn't have permission to edit this note
+        return "Unauthorized: You don't have permission to edit this note", 403
 
     # Update the note's fields with new data from the form
     # Use .get() with fallback to preserve original values if field is empty
     note.title = request.form.get("title", "").strip() or note.title
     note.body = request.form.get("body", "").strip() or note.body
+    note.author = request.form.get("author", "").strip() or note.author
     note.class_code = request.form.get("class", note.class_code)
-    # Note: author is NOT updated - it stays as the original user
 
-    # Save the changes to the database
+    # HANDLE ATTACHMENT DELETION
+    # Get list of attachment IDs to delete (if any checkboxes were checked)
+    attachments_to_delete = request.form.getlist("delete_attachments")
+    if attachments_to_delete:
+        for attachment_id in attachments_to_delete:
+            # Find the attachment in the database
+            attachment = Attachment.query.get(int(attachment_id))
+            if attachment and attachment.note_id == note_id:
+                # Delete the file from the filesystem
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], attachment.filename)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                # Delete the attachment record from database
+                db.session.delete(attachment)
+
+    # HANDLE NEW ATTACHMENT UPLOADS
+    # Check if any new files were uploaded
+    if 'attachments' in request.files:
+        files = request.files.getlist('attachments')
+        for file in files:
+            if file and file.filename and allowed_file(file.filename):
+                # Secure the filename
+                original_filename = secure_filename(file.filename)
+                file_ext = original_filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"{uuid.uuid4()}_{original_filename}"
+
+                # Save the file
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                file.save(file_path)
+
+                # Create attachment record
+                new_attachment = Attachment(
+                    note_id=note.id,
+                    filename=unique_filename,
+                    original_filename=original_filename,
+                    file_type=file_ext
+                )
+                db.session.add(new_attachment)
+
+    # Save all changes to the database
     db.session.commit()
 
     # Redirect back to the main page to show the updated note
@@ -387,12 +453,18 @@ def edit_note(note_id):
 @app.route("/delete/<int:note_id>", methods=["POST"])
 @login_required
 def delete_note(note_id):
+    # Get current user
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for('login'))
+
     # Find the note in the database by its ID
     note = Note.query.get_or_404(note_id)
 
-    # Security check: Only the note owner can delete it
-    if note.user_id != current_user.id:
-        return "Unauthorized", 403
+    # Permission check: User must own the note OR be an admin
+    if note.user_id != current_user.id and not current_user.is_admin:
+        # User doesn't have permission to delete this note
+        return "Unauthorized: You don't have permission to delete this note", 403
 
     # Delete all associated files from the filesystem
     for attachment in note.attachments:
@@ -413,71 +485,271 @@ def delete_note(note_id):
 # AUTHENTICATION ROUTES
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
-    """Handle user registration"""
+    """Handle user registration with Supabase Auth"""
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
 
         # Validation
-        if not username or not email or not password:
-            return render_template("signup.html", error="All fields are required")
-        
-        # Check if username already exists
-        if User.query.filter_by(username=username).first():
-            return render_template("signup.html", error="Username already taken")
-        
-        # Check if email already exists
-        if User.query.filter_by(email=email).first():
-            return render_template("signup.html", error="Email already registered")
-        
-        # Create new user
-        new_user = User(username=username, email=email)
-        new_user.set_password(password)
+        if not email or not password:
+            return render_template("signup.html", error="Email and password are required")
 
-        db.session.add(new_user)
-        db.session.commit()
+        # Check if passwords match
+        if password != confirm_password:
+            return render_template("signup.html", error="Passwords do not match")
 
-        # Log the user in automatically
-        login_user(new_user)
+        try:
+            # Sign up with Supabase Auth
+            # Note: If email confirmation is enabled in Supabase, you'll need to verify email
+            response = supabase.auth.sign_up({
+                "email": email,
+                "password": password,
+                "options": {
+                    "email_redirect_to": None  # Don't redirect after email confirmation
+                }
+            })
 
-        return redirect(url_for("index"))
-    
+            if response.user:
+                # Check if email confirmation is required
+                if response.session and response.session.access_token:
+                    # Email confirmation is disabled - log user in immediately
+                    resp = redirect(url_for("index"))
+                    resp.set_cookie('access_token', response.session.access_token,
+                                   httponly=True, secure=False)  # Set secure=True in production with HTTPS
+                    return resp
+                else:
+                    # Email confirmation is enabled - show success message and redirect to login
+                    return render_template("login.html",
+                                         success=f"Account created successfully! We've sent a verification email to {email}. Please check your inbox and click the confirmation link, then come back here to log in.")
+            else:
+                return render_template("signup.html", error="Signup failed. Please try again.")
+
+        except Exception as e:
+            error_message = str(e)
+            print(f"Signup error: {error_message}")  # Debug logging
+
+            # Extract a user-friendly error message
+            if "already registered" in error_message.lower():
+                error_message = "Email already registered"
+            elif "invalid email" in error_message.lower():
+                error_message = "Invalid email format"
+            elif "password" in error_message.lower():
+                error_message = "Password must be at least 6 characters"
+            else:
+                # Show the actual error in development for debugging
+                error_message = f"Signup failed: {error_message}"
+
+            return render_template("signup.html", error=error_message)
+
     return render_template("signup.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """Handle user login"""
+    """Handle user login with Supabase Auth"""
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
 
-        # Find user
-        user = User.query.filter_by(username=username).first()
+        # Validation
+        if not email or not password:
+            return render_template("login.html", error="Email and password are required")
 
-        # Check credentials
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for("index"))
-        else:
-            return render_template("login.html", error="Invalid username or password")
-    
+        try:
+            # Sign in with Supabase Auth
+            response = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+
+            if response.user and response.session:
+                # Set the access token as a cookie
+                resp = redirect(url_for("index"))
+                resp.set_cookie('access_token', response.session.access_token,
+                               httponly=True, secure=False)  # Set secure=True in production with HTTPS
+                return resp
+            else:
+                return render_template("login.html", error="Invalid email or password")
+
+        except Exception as e:
+            error_str = str(e)
+            print(f"Login error: {error_str}")  # Debug logging
+
+            # Provide user-friendly error messages
+            if "email not confirmed" in error_str.lower() or "email_not_confirmed" in error_str.lower():
+                error_message = "Please verify your email address first. Check your inbox for the confirmation email we sent you."
+            elif "invalid" in error_str.lower():
+                error_message = "Invalid email or password. Please try again."
+            else:
+                error_message = f"Login failed: {error_str}"
+
+            return render_template("login.html", error=error_message)
+
     return render_template("login.html")
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    """Handle password reset requests"""
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+
+        if not email:
+            return render_template("forgot_password.html", error="Please enter your email address")
+
+        try:
+            # Request password reset from Supabase
+            # Specify redirect URL so the email link goes to our reset password page
+            supabase.auth.reset_password_email(
+                email,
+                {
+                    "redirect_to": "http://localhost:5000/reset-password"
+                }
+            )
+
+            # Always show success message (don't reveal if email exists or not for security)
+            return render_template("forgot_password.html",
+                                 success=f"If an account exists with {email}, you will receive a password reset email shortly. Please check your inbox.")
+
+        except Exception as e:
+            print(f"Password reset error: {str(e)}")
+            # Show generic success message even on error (security best practice)
+            return render_template("forgot_password.html",
+                                 success=f"If an account exists with {email}, you will receive a password reset email shortly. Please check your inbox.")
+
+    return render_template("forgot_password.html")
+
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    """Handle password reset form (after clicking email link)"""
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+        access_token = request.form.get("access_token")
+
+        # Validation
+        if not password or not confirm_password:
+            return render_template("reset_password.html",
+                                 error="Please enter and confirm your new password",
+                                 access_token=access_token)
+
+        if password != confirm_password:
+            return render_template("reset_password.html",
+                                 error="Passwords do not match",
+                                 access_token=access_token)
+
+        if len(password) < 6:
+            return render_template("reset_password.html",
+                                 error="Password must be at least 6 characters",
+                                 access_token=access_token)
+
+        try:
+            # Update the password using Supabase
+            if access_token:
+                supabase.auth.update_user(access_token, {"password": password})
+
+                return render_template("login.html",
+                                     success="Password updated successfully! You can now log in with your new password.")
+            else:
+                return render_template("reset_password.html",
+                                     error="Invalid or expired reset link. Please request a new password reset.")
+
+        except Exception as e:
+            print(f"Password update error: {str(e)}")
+            return render_template("reset_password.html",
+                                 error=f"Failed to update password: {str(e)}",
+                                 access_token=access_token)
+
+    # GET request - show the reset form (token will be captured by JavaScript)
+    return render_template("reset_password.html")
 
 @app.route("/logout")
 @login_required
 def logout():
-    """Handle user logout"""
-    logout_user()
-    return redirect(url_for("login"))
+    """Handle user logout with Supabase Auth"""
+    access_token = request.cookies.get('access_token')
+
+    try:
+        # Sign out from Supabase
+        if access_token:
+            supabase.auth.sign_out()
+    except:
+        pass  # Even if sign_out fails, we'll clear the cookie
+
+    # Clear the access token cookie
+    resp = redirect(url_for("login"))
+    resp.set_cookie('access_token', '', expires=0)
+    return resp
 
 @app.route("/profile")
 @login_required
 def profile():
-    """Show user profile page"""
-    # get user's notes
+    """Show user profile page with Supabase user"""
+    # Get the current user from Supabase
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for('login'))
+
+    # Get user's notes using Supabase user ID
     user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.id.desc()).all()
     return render_template("profile.html", user=current_user, notes=user_notes)
+
+@app.route("/change-password", methods=["POST"])
+@login_required
+def change_password():
+    """Allow logged-in users to change their password"""
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for('login'))
+
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    # Validation
+    if not current_password or not new_password or not confirm_password:
+        user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.id.desc()).all()
+        return render_template("profile.html", user=current_user, notes=user_notes,
+                             password_error="All fields are required")
+
+    if new_password != confirm_password:
+        user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.id.desc()).all()
+        return render_template("profile.html", user=current_user, notes=user_notes,
+                             password_error="New passwords do not match")
+
+    if len(new_password) < 6:
+        user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.id.desc()).all()
+        return render_template("profile.html", user=current_user, notes=user_notes,
+                             password_error="Password must be at least 6 characters")
+
+    try:
+        # Verify current password by attempting to sign in
+        access_token = request.cookies.get('access_token')
+        verify_response = supabase.auth.sign_in_with_password({
+            "email": current_user.email,
+            "password": current_password
+        })
+
+        # Update to new password using the admin API
+        # We need to set the access token in the auth client first
+        supabase.auth.set_session(access_token, verify_response.session.refresh_token)
+        supabase.auth.update_user({"password": new_password})
+
+        user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.id.desc()).all()
+        return render_template("profile.html", user=current_user, notes=user_notes,
+                             password_success="Password updated successfully!")
+
+    except Exception as e:
+        error_str = str(e)
+        print(f"Change password error: {error_str}")
+
+        if "invalid" in error_str.lower():
+            error_msg = "Current password is incorrect"
+        else:
+            error_msg = f"Failed to update password: {error_str}"
+
+        user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.id.desc()).all()
+        return render_template("profile.html", user=current_user, notes=user_notes,
+                             password_error=error_msg)
 
 # FILE DOWNLOAD ROUTE
 # Handles secure file downloads for attachments
@@ -524,5 +796,5 @@ def init_app():
 if __name__ == "__main__":
     # Initialize the app (create database and uploads folder)
     init_app()
-    # Start the Flask development server in debug mode on port 5001
-    app.run(debug=True, port=5001)
+    # Start the Flask development server in debug mode
+    app.run(debug=True)

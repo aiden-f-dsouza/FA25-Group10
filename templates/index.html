@@ -326,8 +326,8 @@
   <div class="container">
     <!-- User Navigation Bar -->
     <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 0 20px 0; gap: 15px;">
-      {% if current_user.is_authenticated %}
-        <span style="color: #888;">Welcome, <a href="{{ url_for('profile') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">{{ current_user.username }}</a></span>
+      {% if current_user is not none %}
+        <span style="color: #888;">Welcome, <a href="{{ url_for('profile') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">{{ current_user.email }}</a></span>
         <a href="{{ url_for('logout') }}" style="color: #f44336; text-decoration: none; font-weight: 600;">Logout</a>
       {% else %}
         <a href="{{ url_for('login') }}" style="color: #667eea; text-decoration: none; font-weight: 600;">Login</a>
@@ -449,7 +449,7 @@
 
       <!-- Edit form (hidden by default, shown when edit button is clicked) -->
       <div id="edit-form-{{ n.id }}" class="edit-form">
-        <form method="POST" action="/edit/{{ n.id }}">
+        <form method="POST" action="/edit/{{ n.id }}" enctype="multipart/form-data">
           <!-- Title input for editing -->
           <div style="margin-bottom: 12px;">
             <input type="text" name="title" value="{{ n.title }}" placeholder="Note title" required style="width: 100%;">
@@ -474,6 +474,45 @@
             <textarea name="body" placeholder="Note content" required style="width: 100%; min-height: 120px;">{{ n.body }}</textarea>
           </div>
 
+          <!-- Existing attachments management -->
+          {% if n.attachments %}
+          <div style="margin-bottom: 12px; padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
+            <div style="font-size: 13px; font-weight: 600; color: #a0a3bd; margin-bottom: 8px;">
+              📎 Existing Attachments:
+            </div>
+            {% for attachment in n.attachments %}
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <input type="checkbox" name="delete_attachments" value="{{ attachment.id }}" id="delete-{{ attachment.id }}">
+              <label for="delete-{{ attachment.id }}" style="cursor: pointer; font-size: 13px; color: #e4e6eb;">
+                {% if attachment.file_type == 'pdf' %}📄
+                {% elif attachment.file_type in ['png', 'jpg', 'jpeg', 'gif'] %}🖼️
+                {% elif attachment.file_type in ['doc', 'docx'] %}📝
+                {% elif attachment.file_type in ['ppt', 'pptx'] %}📊
+                {% else %}📎
+                {% endif %}
+                {{ attachment.original_filename }} <span style="color: #f44336;">(check to delete)</span>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- New attachments upload -->
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 8px; color: #a0a3bd; font-size: 14px; font-weight: 600;">
+              📎 Add New Attachments (optional)
+            </label>
+            <input
+              type="file"
+              name="attachments"
+              multiple
+              accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.txt,.ppt,.pptx"
+              style="padding: 10px; background: rgba(23, 27, 46, 0.8); color: #e4e6eb; width: 100%;">
+            <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">
+              Allowed: PDFs, Images, Documents • Max 16MB per file
+            </div>
+          </div>
+
           <!-- Action buttons for the edit form -->
           <div style="display: flex; gap: 10px;">
             <button type="submit" class="btn-small btn-edit">💾 Save Changes</button>
@@ -483,6 +522,8 @@
       </div>
 
       <!-- Action buttons (Edit and Delete) -->
+      <!-- Only show edit/delete buttons if user is logged in AND (owns the note OR is an admin) -->
+      {% if current_user is not none and (current_user.id == n.user_id or current_user.is_admin) %}
       <div class="note-actions">
         <!-- Edit button - toggles the edit form -->
         <button class="btn-small btn-edit" onclick="toggleEdit({{ n.id }})">✏️ Edit</button>
@@ -492,6 +533,7 @@
           <button type="submit" class="btn-small btn-delete">🗑️ Delete</button>
         </form>
       </div>
+      {% endif %}
     </div>
     {% endfor %}
 
@@ -503,9 +545,11 @@
         <div style="font-size: 14px; margin-top: 8px;">Try adjusting your search or filters.</div>
       </div>
     {% endif %}
- 
+
     <!-- Create Note Form -->
     <!-- Form for users to submit new notes to the platform -->
+    <!-- Only shown to logged-in users; anonymous users see a login prompt -->
+    {% if current_user is not none %}
     <div class="create-section">
       <div class="section-title">✍️ Create New Note</div>
 
@@ -553,6 +597,19 @@
         </div>
       </form>
     </div>
+    {% else %}
+    <!-- Message for anonymous users -->
+    <div class="create-section" style="text-align: center; padding: 40px 24px;">
+      <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+      <div style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">Want to share your notes?</div>
+      <div style="color: #a0a3bd; margin-bottom: 24px;">Create an account or log in to post notes and contribute to the community.</div>
+      <div>
+        <a href="{{ url_for('login') }}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: transform 0.2s;">
+          Log In / Sign Up
+        </a>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </body>
 </html>

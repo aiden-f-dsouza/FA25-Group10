@@ -60,6 +60,13 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+        .success {
+            background-color: #4CAF50;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
         .signup-link {
             text-align: center;
             margin-top: 20px;
@@ -78,10 +85,14 @@
         <div class="error">{{ error }}</div>
         {% endif %}
 
+        {% if success %}
+        <div class="success">{{ success }}</div>
+        {% endif %}
+
         <form method="POST">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
             </div>
 
             <div class="form-group">
@@ -91,6 +102,10 @@
 
             <button type="submit">Login</button>
         </form>
+
+        <div class="signup-link">
+            <a href="{{ url_for('forgot_password') }}">Forgot password?</a>
+        </div>
 
         <div class="signup-link">
             Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a>
