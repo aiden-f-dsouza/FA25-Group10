@@ -412,11 +412,10 @@
       <form method="get" action="/notes" style="margin: 0;">
         <!-- Preserve all filter parameters when searching -->
         <input type="hidden" name="class_filter" value="{{ selected_filter or 'All' }}">
-        <input type="hidden" name="author_filter" value="{{ author_filter or 'All' }}">
         <input type="hidden" name="tag_filter" value="{{ tag_filter or 'All' }}">
         <input type="hidden" name="date_filter" value="{{ date_filter or 'All' }}">
         <input type="hidden" name="sort_by" value="{{ sort_by or 'recent' }}">
-        <input type="text" name="search" placeholder="🔍 Search notes..." value="{{ search_query or '' }}">
+        <input type="text" name="search" placeholder="🔍 Search notes or authors..." value="{{ search_query or '' }}">
       </form>
     </div>
 
@@ -447,6 +446,39 @@
   <div class="container">
     <div class="title" style="margin-top: 10px;">📚 Class Notes</div>
 
+    <!-- Notifications Banner for @Mentions -->
+    {% if unread_mentions and unread_mentions|length > 0 %}
+    <div style="background: linear-gradient(135deg, rgba(237, 137, 54, 0.15) 0%, rgba(237, 137, 54, 0.05) 100%); border: 2px solid var(--accent-terracotta); border-radius: var(--radius-lg); padding: 16px 24px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(237, 137, 54, 0.2);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <h3 style="margin: 0; color: var(--text-primary); font-size: 16px; font-weight: 700;">
+          🔔 You have {{ unread_mentions|length }} new mention{{ 's' if unread_mentions|length > 1 else '' }}
+        </h3>
+        <form method="POST" action="/mentions/mark-all-read" style="margin: 0;">
+          <button type="submit" style="background: var(--accent-terracotta); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-md); font-size: 12px; cursor: pointer; font-weight: 600;">
+            Mark all as read
+          </button>
+        </form>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for mention in unread_mentions[:5] %}
+        <a href="/notes#note-{{ mention.note_id }}" onclick="markMentionRead({{ mention.id }})" style="display: block; background: rgba(16, 21, 34, 0.6); padding: 12px; border-radius: 8px; border-left: 3px solid var(--accent-terracotta); text-decoration: none; transition: all 0.2s ease;">
+          <div style="color: var(--text-primary); font-size: 14px; margin-bottom: 4px;">
+            <strong style="color: var(--accent-terracotta);">{{ mention.mentioning_author }}</strong> mentioned you in a comment
+          </div>
+          <div style="color: var(--text-secondary); font-size: 12px;">
+            {{ mention.created.strftime('%b %d, %Y at %H:%M') }}
+          </div>
+        </a>
+        {% endfor %}
+        {% if unread_mentions|length > 5 %}
+        <div style="text-align: center; color: var(--text-secondary); font-size: 13px; margin-top: 4px;">
+          ... and {{ unread_mentions|length - 5 }} more
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Add Note Section - Highlighted Row -->
     <div class="add-note-section">
       <h3>📝 Share Your Notes</h3>
@@ -460,7 +492,7 @@
         <!-- preserve tag filter when submitting other filters -->
         <input type="hidden" name="tag_filter" value="{{ tag_filter or 'All' }}">
 
-        <!-- Row 1: Main filters (Class, Author, Date Range, Sort) -->
+        <!-- Row 1: Main filters (Class, Date Range, Sort) -->
         <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
 
           <!-- Filter by class (CS124, MATH221, etc.) -->
@@ -468,14 +500,6 @@
             <option value="All" {% if selected_filter == "All" %}selected{% endif %}>All Classes</option>
             {% for c in classes %}
             <option value="{{ c }}" {% if selected_filter == c %}selected{% endif %}>{{ c }}</option>
-            {% endfor %}
-          </select>
-
-          <!-- Filter by author (shows all users who have posted notes) -->
-          <select name="author_filter" onchange="this.form.submit()" style="min-width: 150px;">
-            <option value="All" {% if author_filter == "All" %}selected{% endif %}>All Authors</option>
-            {% for a in authors %}
-            <option value="{{ a }}" {% if author_filter == a %}selected{% endif %}>{{ a }}</option>
             {% endfor %}
           </select>
 
@@ -520,7 +544,7 @@
     <div id="notes-feed" style="margin-top: 20px;">
     <div id="notes-container">
       {% for n in notes %}
-      <div class="card">
+      <div class="card" id="note-{{ n.id }}">
         <!-- Note content (visible by default, hidden when editing) -->
         <div id="note-content-{{ n.id }}" class="note-content">
           <!-- Note title (clickable headline) -->
@@ -532,7 +556,6 @@
             <span class="meta-tag">📅 {{ n.created.strftime('%Y-%m-%d %H:%M') }}</span>
             <span class="meta-tag">📚 {{ n.class_code }}</span>
             <span class="meta-tag">❤️ {{ n.likes|length }}</span>
-            <span class="meta-tag">💬 {{ n.comments|length }}</span>
             {# Tags badges on note #}
             {% if n.get_tags_list() %}
               {% for tag in n.get_tags_list() %}
@@ -680,16 +703,66 @@
           </form>
         </div>
 
-        <!-- Quick comment form -->
+        <!-- Comments Thread Section -->
+        {% if n.comments %}
+        <div style="margin-top: 16px; padding: 16px; background: rgba(23, 27, 46, 0.4); border-radius: 12px; border-left: 3px solid rgba(102, 126, 234, 0.5);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-weight: 600; color: #a0a3bd; font-size: 14px;">
+              💬 Comments ({{ n.comments|length }})
+            </div>
+            <button onclick="toggleComments({{ n.id }})" class="btn-small" style="padding: 4px 10px; font-size: 12px; background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.3); color: #a0a3bd;">
+              <span class="toggle-text-{{ n.id }}">Hide comments</span>
+            </button>
+          </div>
+
+          <div class="comments-list-{{ n.id }}">
+            {% for comment in n.comments %}
+          <div style="padding: 12px; margin-bottom: 8px; background: rgba(16, 21, 34, 0.6); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.2);" id="comment-{{ comment.id }}">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 600; color: var(--accent-terracotta); font-size: 13px;">{{ comment.author }}</span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-size: 11px; color: #6b7280;">{{ comment.created.strftime('%Y-%m-%d %H:%M') }}</span>
+                {% if current_user and (comment.user_id == current_user.id or current_user.is_admin) %}
+                  <button onclick="toggleEditComment({{ comment.id }})" class="btn-small" style="padding: 4px 8px; font-size: 11px; background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.4);">✏️ Edit</button>
+                  <form method="POST" action="/comment/{{ comment.id }}/delete" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this comment?');">
+                    <button type="submit" class="btn-small" style="padding: 4px 8px; font-size: 11px; background: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.4);">🗑️ Delete</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Comment body (view mode) -->
+            <div class="comment-view-{{ comment.id }}" style="color: #e4e6eb; font-size: 14px; line-height: 1.5;">{{ comment.body }}</div>
+
+            <!-- Comment edit form (hidden by default) -->
+            <div class="comment-edit-{{ comment.id }}" style="display: none;">
+              <form method="POST" action="/comment/{{ comment.id }}/edit" style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                <input type="text" name="comment_body" value="{{ comment.body }}" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.3); background: rgba(16, 21, 34, 0.8); color: #e4e6eb; font-size: 13px;" required>
+                <button type="submit" class="btn-small btn-edit" style="padding: 6px 12px; font-size: 12px;">💾 Save</button>
+                <button type="button" onclick="toggleEditComment({{ comment.id }})" class="btn-small" style="padding: 6px 12px; font-size: 12px; background: rgba(107, 114, 128, 0.3); border: 1px solid rgba(107, 114, 128, 0.5);">❌ Cancel</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick comment form (only for logged-in users) -->
+        {% if current_user %}
         <div style="margin-top: 12px;">
           <form method="POST" action="/comment/{{ n.id }}" style="display:flex; gap:8px; align-items:center;">
-            {% if current_user is none %}
-              <input type="text" name="comment_author" placeholder="Name" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(102,126,234,0.2); background: rgba(23,27,46,0.6); color:#e4e6eb; font-size:13px; width:140px;">
-            {% endif %}
-            <input type="text" name="comment_body" placeholder="Add a short comment" style="flex:1; padding:8px 12px; border-radius:8px; border:1px solid rgba(102,126,234,0.2); background: rgba(23,27,46,0.6); color:#e4e6eb; font-size:13px;">
-            <button type="submit" class="btn-small btn-edit">💬</button>
+            <input type="text" name="comment_body" placeholder="Add a comment or @mention someone..." style="flex:1; padding:8px 12px; border-radius:8px; border:1px solid rgba(102,126,234,0.2); background: rgba(23,27,46,0.6); color:#e4e6eb; font-size:13px;" required>
+            <button type="submit" class="btn-small btn-edit">💬 Post</button>
           </form>
         </div>
+        {% else %}
+        <div style="margin-top: 12px; padding: 8px 12px; background: rgba(23,27,46,0.4); border-radius: 8px; text-align: center;">
+          <span style="color: var(--text-secondary); font-size: 13px;">
+            <a href="{{ url_for('login') }}" style="color: var(--accent-terracotta); text-decoration: none;">Log in</a> to comment
+          </span>
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
@@ -832,6 +905,52 @@
       if (select) {
         select.value = 'popular';
         select.form.submit();
+      }
+    }
+
+    // Mark a specific mention as read
+    async function markMentionRead(mentionId) {
+      try {
+        await fetch(`/mentions/${mentionId}/mark-read`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (err) {
+        console.error('Failed to mark mention as read', err);
+      }
+    }
+
+    // Toggle edit mode for a comment
+    function toggleEditComment(commentId) {
+      const viewDiv = document.querySelector(`.comment-view-${commentId}`);
+      const editDiv = document.querySelector(`.comment-edit-${commentId}`);
+
+      if (viewDiv.style.display === 'none') {
+        // Currently editing - switch back to view mode
+        viewDiv.style.display = 'block';
+        editDiv.style.display = 'none';
+      } else {
+        // Currently viewing - switch to edit mode
+        viewDiv.style.display = 'none';
+        editDiv.style.display = 'block';
+      }
+    }
+
+    // Toggle show/hide comments for a note
+    function toggleComments(noteId) {
+      const commentsList = document.querySelector(`.comments-list-${noteId}`);
+      const toggleText = document.querySelector(`.toggle-text-${noteId}`);
+
+      if (commentsList.style.display === 'none') {
+        // Currently hidden - show comments
+        commentsList.style.display = 'block';
+        toggleText.textContent = 'Hide comments';
+      } else {
+        // Currently visible - hide comments
+        commentsList.style.display = 'none';
+        toggleText.textContent = 'Show comments';
       }
     }
   </script>

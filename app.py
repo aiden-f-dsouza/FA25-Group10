@@ -173,17 +173,52 @@ class Comment(db.Model):
     # Foreign key - links to a specific note
     note_id = db.Column(db.Integer, db.ForeignKey('note.id'), nullable=False)
 
-    # Comment author
+    # Comment author (email)
     author = db.Column(db.String(100), nullable=False, default="Anonymous")
 
     # Comment body/content
     body = db.Column(db.Text, nullable=False)
+
+    # User ID from Supabase (for permission tracking)
+    user_id = db.Column(db.String(36), nullable=True)
 
     # When this comment was created
     created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<Comment {self.id}: {self.author} on Note {self.note_id}>'
+
+
+class Mention(db.Model):
+    """
+    Mention model - represents when a user is @mentioned in a comment
+    """
+    # Primary key
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign key - links to the comment where mention occurred
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
+
+    # Foreign key - links to the note where mention occurred
+    note_id = db.Column(db.Integer, db.ForeignKey('note.id'), nullable=False)
+
+    # Email of the mentioned user (from Supabase auth)
+    mentioned_user_email = db.Column(db.String(100), nullable=False)
+
+    # User ID of mentioned user (for linking to auth system)
+    mentioned_user_id = db.Column(db.String(36), nullable=True)
+
+    # Author who created the mention
+    mentioning_author = db.Column(db.String(100), nullable=False)
+
+    # Has this mention been read/seen?
+    is_read = db.Column(db.Boolean, nullable=False, default=False)
+
+    # When this mention was created
+    created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Mention {self.id}: @{self.mentioned_user_email} in Comment {self.comment_id}>'
 
 
 # AUTHENTICATION HELPER FUNCTIONS
@@ -284,6 +319,14 @@ def extract_hashtags(text):
     return [tag[1:] for tag in re.findall(r"#[\w-]+", text)]
 
 
+def extract_mentions(text):
+    """Extract @mentions from text (e.g., @user@example.com or @example@gmail.com)"""
+    # Pattern to match emails after @ symbol
+    # Matches @email@domain.com or @username (without email)
+    mentions = re.findall(r"@([\w\.-]+@[\w\.-]+\.\w+)", text)
+    return mentions
+
+
 def _get_filtered_notes(args):
     """Return the filtered & sorted notes (full list) according to query args.
 
@@ -292,7 +335,6 @@ def _get_filtered_notes(args):
     """
     selected_filter = args.get("class_filter", "All")
     search_query = args.get("search", "").strip().lower()
-    author_filter = args.get("author_filter", "All")
     tag_filter = args.get("tag_filter", "All")
     date_filter = args.get("date_filter", "All")
     sort_by = args.get("sort_by", "recent")
@@ -304,15 +346,12 @@ def _get_filtered_notes(args):
     if selected_filter and selected_filter != "All":
         query = query.filter(Note.class_code == selected_filter)
 
-    # --- Filter by author (e.g., only show notes from "John") ---
-    if author_filter and author_filter != "All":
-        query = query.filter(Note.author == author_filter)
-
-    # --- Filter by search term (looks in both title and body) ---
+    # --- Filter by search term (looks in title, body, AND author) ---
     if search_query:
         query = query.filter(
             (Note.title.ilike(f"%{search_query}%")) |
-            (Note.body.ilike(f"%{search_query}%"))
+            (Note.body.ilike(f"%{search_query}%")) |
+            (Note.author.ilike(f"%{search_query}%"))
         )
 
     # --- Filter by tag (if provided) ---
@@ -473,7 +512,6 @@ def notes():
     # Get filter parameters from the URL
     selected_filter = request.args.get("class_filter", "All")
     search_query = request.args.get("search", "").strip().lower()
-    author_filter = request.args.get("author_filter", "All")
     tag_filter = request.args.get("tag_filter", "All")
     date_filter = request.args.get("date_filter", "All")
     sort_by = request.args.get("sort_by", "recent")
@@ -495,9 +533,6 @@ def notes():
     notes_page = filtered_notes[start:end]
     has_more = end < total
 
-    # Get list of unique authors for the author filter dropdown
-    unique_authors = sorted([author[0] for author in db.session.query(Note.author).distinct().all()])
-
     # Build tag cloud (tag -> count)
     tag_counts = {}
     all_notes = Note.query.all()
@@ -513,6 +548,14 @@ def notes():
     # Get current user from Supabase
     current_user = get_current_user()
 
+    # Get unread mentions for current user
+    unread_mentions = []
+    if current_user:
+        unread_mentions = Mention.query.filter_by(
+            mentioned_user_email=current_user.email,
+            is_read=False
+        ).order_by(Mention.created.desc()).all()
+
     # Send everything to the template to display
     return render_template(
         "index.html",
@@ -524,12 +567,11 @@ def notes():
         classes=CLASSES,  # List of all available classes
         selected_filter=selected_filter,  # Currently selected class filter
         search_query=search_query,  # Current search term
-        author_filter=author_filter,  # Currently selected author filter
         date_filter=date_filter,  # Currently selected date range
         sort_by=sort_by,  # Current sort option
-        authors=unique_authors,  # List of all authors for the dropdown
         current_user=current_user,  # Current Supabase user
         tags=tags_sorted,  # Tag cloud data
+        unread_mentions=unread_mentions,  # Unread @mentions for current user
     )
 
 
@@ -585,26 +627,138 @@ def like_note(note_id):
 
 # Endpoint to add a comment to a note
 @app.route("/comment/<int:note_id>", methods=["POST"])
+@login_required
 def add_comment(note_id):
-    """Add a comment to a note."""
-    # Get current user (or use form input for anonymous)
+    """Add a comment to a note. Requires login."""
+    # Get current user (must be logged in due to @login_required)
     current_user = get_current_user()
-    if current_user:
-        author = current_user.email
-    else:
-        author = request.form.get("comment_author", "Anonymous").strip() or "Anonymous"
+    author = current_user.email
 
     body = request.form.get("comment_body", "").strip()
 
     if not body:
         return redirect(request.referrer or url_for("notes"))
 
-    # Create a new comment
-    new_comment = Comment(note_id=note_id, author=author, body=body)
+    # Create a new comment with user_id for permission tracking
+    new_comment = Comment(
+        note_id=note_id,
+        author=author,
+        body=body,
+        user_id=current_user.id
+    )
     db.session.add(new_comment)
     db.session.commit()
 
+    # Extract @mentions and create Mention records
+    mentioned_emails = extract_mentions(body)
+    for email in mentioned_emails:
+        # Check if this email exists in the system
+        # Try to find user ID from Supabase (optional, can be None for now)
+        user_id = None
+
+        # Create mention record
+        mention = Mention(
+            comment_id=new_comment.id,
+            note_id=note_id,
+            mentioned_user_email=email,
+            mentioned_user_id=user_id,
+            mentioning_author=author,
+            is_read=False
+        )
+        db.session.add(mention)
+
+    # Commit all mentions
+    if mentioned_emails:
+        db.session.commit()
+
     return redirect(request.referrer or url_for("notes"))
+
+
+# Endpoint to edit a comment
+@app.route("/comment/<int:comment_id>/edit", methods=["POST"])
+@login_required
+def edit_comment(comment_id):
+    """Edit a comment. User can edit their own comments, admin can edit all."""
+    current_user = get_current_user()
+    comment = Comment.query.get_or_404(comment_id)
+
+    # Check permissions: user must own the comment OR be an admin
+    if comment.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    new_body = request.form.get("comment_body", "").strip()
+    if not new_body:
+        return redirect(request.referrer or url_for("notes"))
+
+    # Update the comment body
+    comment.body = new_body
+    db.session.commit()
+
+    return redirect(request.referrer or url_for("notes"))
+
+
+# Endpoint to delete a comment
+@app.route("/comment/<int:comment_id>/delete", methods=["POST"])
+@login_required
+def delete_comment(comment_id):
+    """Delete a comment. User can delete their own comments, admin can delete all."""
+    current_user = get_current_user()
+    comment = Comment.query.get_or_404(comment_id)
+
+    # Check permissions: user must own the comment OR be an admin
+    if comment.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    # Delete associated mentions first (foreign key constraint)
+    Mention.query.filter_by(comment_id=comment_id).delete()
+
+    # Delete the comment
+    db.session.delete(comment)
+    db.session.commit()
+
+    return redirect(request.referrer or url_for("notes"))
+
+
+# MENTION ROUTES
+@app.route("/mentions/<int:mention_id>/mark-read", methods=["POST"])
+def mark_mention_read(mention_id):
+    """Mark a single mention as read"""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    mention = Mention.query.get_or_404(mention_id)
+
+    # Verify this mention belongs to the current user
+    if mention.mentioned_user_email != current_user.email:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    mention.is_read = True
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+
+@app.route("/mentions/mark-all-read", methods=["POST"])
+def mark_all_mentions_read():
+    """Mark all mentions as read for the current user"""
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for('login'))
+
+    # Find all unread mentions for this user
+    unread_mentions = Mention.query.filter_by(
+        mentioned_user_email=current_user.email,
+        is_read=False
+    ).all()
+
+    # Mark them all as read
+    for mention in unread_mentions:
+        mention.is_read = True
+
+    db.session.commit()
+
+    return redirect(url_for("notes"))
 
 
 # EDIT NOTE ROUTE
