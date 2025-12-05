@@ -365,9 +365,20 @@ def _get_filtered_notes(args):
 # ROUTES
 # These functions handle different URLs and user requests
 
-# Main page route - handles both displaying notes (GET) and creating new notes (POST)
-@app.route("/", methods=["GET", "POST"])
-def index():
+# Homepage route - landing page
+@app.route("/")
+def home():
+    # Check if there's a home template, otherwise redirect to notes
+    try:
+        current_user = get_current_user()
+        return render_template("homev3.html", current_user=current_user)
+    except:
+        # If homev3.html doesn't exist or has issues, redirect to notes
+        return redirect(url_for('notes'))
+
+# Notes feed route - handles both displaying notes (GET) and creating new notes (POST)
+@app.route("/notes", methods=["GET", "POST"])
+def notes():
     print("===== INDEX ROUTE CALLED =====")
     # HANDLING NOTE CREATION (POST REQUEST)
     # This runs when user submits the "Create Note" form
@@ -977,11 +988,6 @@ def change_password():
 
 
 # AIDEN'S NEW ROUTES - AI Summarizer and Home
-
-@app.route("/home")
-def home():
-    """Home page route (Aiden's feature)"""
-    return render_template("homev3.html")
 
 @app.route("/summarizer")
 def summarizer():

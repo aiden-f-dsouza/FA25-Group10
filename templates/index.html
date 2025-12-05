@@ -2,72 +2,69 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Class Notes</title>
+  <title>Class Notes - UIUC Turbolearn</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- External CSS System -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='turbolearn-darkmode.css') }}">
+
+  <!-- Typography System -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Notes page specific CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='notes-page.css') }}">
+
   <style>
-    /* ===== BASE STYLES ===== */
-    /* Sets up the overall page appearance with a modern dark theme */
+    /* Additional page-specific styles */
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
-      color: #e4e6eb;
-      margin: 0;
-      min-height: 100vh;
       padding-top: 70px;
       padding-bottom: 20px;
     }
 
-    /* Smooth scroll behavior */
-    html {
-      scroll-behavior: smooth;
-    }
-
-    /* Main container that holds all content */
+    /* Container using theme system */
     .container {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 0 24px;
     }
 
-    /* ===== NAVIGATION HEADER ===== */
-    /* Sticky header bar for navigation */
+    /* Navigation using new header styles */
     .navbar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      background: rgba(15, 20, 25, 0.95);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(102, 126, 234, 0.3);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      background: var(--bg-overlay);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-light);
       z-index: 1000;
       padding: 0 20px;
       height: 70px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      transition: all 0.3s ease;
     }
 
-    /* Logo/branding on left side */
     .navbar-logo {
+      font-family: var(--font-serif);
       font-size: 24px;
       font-weight: 800;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--accent-terracotta);
       text-decoration: none;
       display: flex;
       align-items: center;
       gap: 10px;
       cursor: pointer;
+      transition: opacity 0.3s ease;
     }
 
     .navbar-logo:hover {
       opacity: 0.8;
-      transition: opacity 0.3s ease;
     }
 
-    /* Navigation links container */
     .navbar-nav {
       display: flex;
       gap: 24px;
@@ -77,321 +74,168 @@
       padding: 0;
     }
 
-    /* Individual nav links */
     .navbar-nav a {
-      color: #e4e6eb;
+      color: var(--text-secondary);
       text-decoration: none;
       font-weight: 500;
       font-size: 14px;
       transition: all 0.3s ease;
       padding: 6px 12px;
-      border-radius: 6px;
+      border-radius: var(--radius-md);
       cursor: pointer;
     }
 
     .navbar-nav a:hover {
-      color: #667eea;
-      background: rgba(102, 126, 234, 0.1);
+      color: var(--text-primary);
+      background: var(--bg-card);
     }
 
-    /* User welcome message in navbar */
     .navbar-user {
-      color: #a0a3bd;
+      color: var(--text-tertiary);
       font-size: 14px;
     }
 
     .navbar-user a {
-      color: #667eea;
+      color: var(--accent-terracotta);
       text-decoration: none;
       font-weight: 600;
     }
 
     .navbar-user a:hover {
-      color: #764ba2;
+      opacity: 0.8;
     }
 
-    /* ===== HEADER ===== */
-    /* Main title with gradient text effect */
+    /* Page title */
     .title {
-      font-size: 42px;
-      font-weight: 800;
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 900;
       margin-bottom: 30px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -1px;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
     }
 
-    /* ===== FILTER SECTION ===== */
-    /* Container for all filter controls */
-    .filter-section {
-      background: rgba(26, 31, 51, 0.6);
-      backdrop-filter: blur(10px);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 32px;
-      border: 1px solid rgba(102, 126, 234, 0.2);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    /* ===== FORM CONTROLS ===== */
-    /* Styling for all input fields, dropdowns, and buttons */
-    select, input, textarea {
-      padding: 12px 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(102, 126, 234, 0.3);
-      background: rgba(23, 27, 46, 0.8);
-      color: #e4e6eb;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      font-family: inherit;
-    }
-
-    /* Hover effect for input fields - adds glow */
-    select:hover, input:hover, textarea:hover {
-      border-color: rgba(102, 126, 234, 0.6);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    /* Focus state for better accessibility */
-    select:focus, input:focus, textarea:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-    }
-
-    /* Button styling with gradient background */
-    button {
-      cursor: pointer;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      font-weight: 600;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    /* Button hover effect - lifts up and brightens */
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
-
-    /* Button click effect - presses down */
-    button:active {
-      transform: translateY(0);
-    }
-
-    /* ===== NOTE CARDS ===== */
-    /* Individual note card styling with glassmorphism effect */
-    .card {
-      background: rgba(26, 31, 51, 0.6);
-      backdrop-filter: blur(10px);
-      padding: 24px;
-      border-radius: 16px;
-      margin-bottom: 20px;
-      border: 1px solid rgba(102, 126, 234, 0.2);
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Card hover effect - lifts and glows */
-    .card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(102, 126, 234, 0.5);
-      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
-    }
-
-    /* Note title within card */
-    .note-title {
-      font-weight: 700;
-      font-size: 22px;
-      margin-bottom: 10px;
-      color: #ffffff;
-      letter-spacing: -0.5px;
-    }
-
-    /* Metadata line (author, date, class) */
-    .note-meta {
-      font-size: 13px;
-      color: #a0a3bd;
-      margin-bottom: 16px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    /* Individual meta tags (class, author badges) */
-    .meta-tag {
-      background: rgba(102, 126, 234, 0.2);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #667eea;
-    }
-
-    /* Note body text */
-    .note-body {
-      white-space: pre-wrap;
-      line-height: 1.7;
-      color: #d0d2e0;
-      font-size: 15px;
-    }
-
-    /* ===== CREATE NOTE FORM ===== */
-    /* Section for creating new notes */
-    .create-section {
-      background: rgba(26, 31, 51, 0.6);
-      backdrop-filter: blur(10px);
-      border-radius: 16px;
-      padding: 28px;
-      margin-top: 40px;
-      border: 1px solid rgba(102, 126, 234, 0.2);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    /* Section title */
-    .section-title {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 20px;
-      color: #ffffff;
-    }
-
-    /* Full width for form inputs */
-    form textarea {
+    /* Modal styles */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      min-height: 140px;
-      resize: vertical;
-      line-height: 1.6;
+      height: 100%;
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    form input, form select {
-      width: 100%;
-    }
-
-    /* Two column grid for author and title inputs */
-    /* Creates side-by-side layout on larger screens */
-    form .two {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    /* Stack inputs vertically on medium and small screens */
-    @media(max-width: 900px) {
-      form .two {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Note count badge */
-    .note-count {
-      background: rgba(102, 126, 234, 0.2);
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #667eea;
-      white-space: nowrap;
-    }
-
-    /* Empty state message */
-    .empty-state {
-      text-align: center;
-      color: #6b7280;
-      margin: 60px 0;
-      font-size: 16px;
-    }
-
-    /* ===== EDIT/DELETE BUTTONS ===== */
-    /* Action buttons for each note card */
-    .note-actions {
+    .modal.active {
       display: flex;
-      gap: 10px;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(102, 126, 234, 0.2);
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
     }
 
-    /* Small button styling for edit/delete/cancel */
-    .btn-small {
-      padding: 8px 16px;
-      font-size: 13px;
-      cursor: pointer;
+    .modal-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(16, 21, 34, 0.85);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-content {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      max-width: 700px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+      z-index: 2001;
+    }
+
+    .modal.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      position: sticky;
+      top: 0;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-light);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .modal-header h2 {
+      font-family: var(--font-serif);
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--text-primary);
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .modal-close {
+      background: none;
       border: none;
-      border-radius: 8px;
-      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 32px;
+      cursor: pointer;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
       transition: all 0.3s ease;
+      line-height: 1;
     }
 
-    /* Edit button - blue/purple gradient */
-    .btn-edit {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+      transform: rotate(90deg);
     }
 
-    .btn-edit:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    .modal-body {
+      padding: 32px;
     }
 
-    /* Delete button - red gradient */
-    .btn-delete {
-      background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
-      color: white;
-      box-shadow: 0 2px 8px rgba(245, 101, 101, 0.3);
-    }
-
-    .btn-delete:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(245, 101, 101, 0.5);
-    }
-
-    /* Cancel button - gray */
-    .btn-cancel {
-      background: rgba(107, 114, 128, 0.6);
-      color: white;
-    }
-
-    .btn-cancel:hover {
-      background: rgba(107, 114, 128, 0.8);
-    }
-
-    /* Edit form container - hidden by default */
-    .edit-form {
-      display: none;
-      margin-top: 16px;
-      padding: 16px;
-      background: rgba(23, 27, 46, 0.5);
-      border-radius: 12px;
-      border: 1px solid rgba(102, 126, 234, 0.3);
-    }
-
-    /* Show edit form when active */
-    .edit-form.active {
-      display: block;
-    }
-
-    /* Note content - hide when editing */
-    .note-content.editing {
-      display: none;
-    }
-
-    /* ===== RESPONSIVE DESIGN ===== */
-    /* Adjusts layout for smaller screens (phones) */
+    /* Responsive design */
     @media(max-width:768px) {
       .title { font-size: 32px; }
-      form .two { grid-template-columns: 1fr; }
+      .navbar-nav { display: none; }
       .filter-section { padding: 16px; }
       .card { padding: 20px; }
       .note-actions { flex-wrap: wrap; }
+
+      .modal-content {
+        width: 95%;
+        max-height: 90vh;
+      }
+
+      .modal-header {
+        padding: 20px 24px;
+      }
+
+      .modal-header h2 {
+        font-size: 20px;
+      }
+
+      .modal-body {
+        padding: 24px;
+      }
     }
   </style>
 
@@ -408,27 +252,66 @@
       // Toggle the 'editing' class to show/hide note content
       noteContent.classList.toggle('editing');
     }
+
+    // ===== JAVASCRIPT FOR CREATE NOTE MODAL =====
+    // Opens the create note modal with animation
+    function openCreateModal() {
+      {% if current_user is not none %}
+        const modal = document.getElementById('createNoteModal');
+        if (modal) {
+          modal.classList.add('active');
+          // Prevent body scroll when modal is open
+          document.body.style.overflow = 'hidden';
+        }
+      {% else %}
+        // Redirect to login with message for non-logged-in users
+        window.location.href = "{{ url_for('login') }}?message=Please log in to create a note";
+      {% endif %}
+    }
+
+    // Closes the create note modal with animation
+    function closeCreateModal() {
+      const modal = document.getElementById('createNoteModal');
+      if (modal) {
+        modal.classList.remove('active');
+        // Restore body scroll when modal is closed
+        document.body.style.overflow = '';
+      }
+    }
+
+    // Close modal when pressing Escape key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeCreateModal();
+      }
+    });
   </script>
 </head>
 <body>
   <!-- Navigation Header -->
   <nav class="navbar">
-    <a href="#" class="navbar-logo">📚 Class Notes</a>
+    <a href="{{ url_for('home') }}" class="navbar-logo">📚 UIUC Turbolearn</a>
     <ul class="navbar-nav">
-      <li><a href="#notes-feed">📝 Notes Feed</a></li>
-      {% if current_user is not none %}
-        <li><a href="#create-form">✍️ Create Note</a></li>
-      {% endif %}
-      <li><a href="#filters">🔍 Filters</a></li>
+      <li><a href="/notes">📝 Notes Feed</a></li>
+      <li><a href="#" onclick="openCreateModal(); return false;">✍️ Create Note</a></li>
+      <li><a href="/notes#filters">🔍 Filters</a></li>
       <li><a href="/summarizer">AI Summarizer</a></li>
       <li><a href="#" onclick="scrollToTop(); return false;">⬆️ Top</a></li>
+
+      <!-- Theme toggle button -->
+      <li>
+        <button class="theme-toggle" aria-label="Toggle dark mode">
+          <span class="moon-icon">🌙</span>
+          <span class="sun-icon">☀️</span>
+        </button>
+      </li>
 
       <!-- User authentication section in navbar -->
       {% if current_user is not none %}
         <li class="navbar-user">
           Welcome, <a href="{{ url_for('profile') }}">{{ current_user.email }}</a>
         </li>
-        <li><a href="{{ url_for('logout') }}" style="color: #f56565;">Logout</a></li>
+        <li><a href="{{ url_for('logout') }}" style="color: var(--accent-terracotta); opacity: 0.8;">Logout</a></li>
       {% else %}
         <li><a href="{{ url_for('login') }}">Login</a></li>
         <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
@@ -705,72 +588,73 @@
       </div>
     {% endif %}
 
-    <!-- Create Note Form -->
-    <!-- Form for users to submit new notes to the platform -->
-    <!-- Only shown to logged-in users; anonymous users see a login prompt -->
+    <!-- Create Note Modal -->
+    <!-- Modal popup for creating new notes - triggers from navbar button -->
+    <!-- Only shown to logged-in users; anonymous users see login prompt in navbar -->
     {% if current_user is not none %}
-    <div id="create-form" class="create-section">
-      <div class="section-title">✍️ Create New Note</div>
+    <div id="createNoteModal" class="modal">
+      <!-- Dark backdrop - clicking it closes the modal -->
+      <div class="modal-backdrop" onclick="closeCreateModal()"></div>
 
-      <!-- enctype="multipart/form-data" is REQUIRED for file uploads -->
-      <form method="POST" action="/" enctype="multipart/form-data">
-        <!-- Note title input (author is automatically set to logged-in user) -->
-        <div>
-          <input type="text" name="title" placeholder="Note title">
+      <!-- Modal content container -->
+      <div class="modal-content">
+        <!-- Modal header with title and close button -->
+        <div class="modal-header">
+          <h2>✍️ Create New Note</h2>
+          <button class="modal-close" onclick="closeCreateModal()" aria-label="Close modal">&times;</button>
         </div>
 
-        <!-- Class selector dropdown -->
-        <div style="margin-top: 16px;">
-          <select name="class">
-            {% for c in classes %}
-            <option value="{{ c }}">{{ c }}</option>
-            {% endfor %}
-          </select>
-        </div>
+        <!-- Modal body with the create form -->
+        <div class="modal-body">
+          <!-- enctype="multipart/form-data" is REQUIRED for file uploads -->
+          <form method="POST" action="/notes" enctype="multipart/form-data">
+            <!-- Note title input (author is automatically set to logged-in user) -->
+            <div>
+              <input type="text" name="title" placeholder="Note title">
+            </div>
 
-        <!-- Note content text area -->
-        <div style="margin-top: 16px;">
-          <textarea name="body" placeholder="Write your note..." required></textarea>
-        </div>
+            <!-- Class selector dropdown -->
+            <div style="margin-top: 16px;">
+              <select name="class">
+                {% for c in classes %}
+                <option value="{{ c }}">{{ c }}</option>
+                {% endfor %}
+              </select>
+            </div>
 
-        <!-- Tags input -->
-        <div style="margin-top: 12px;">
-          <input type="text" name="tags" placeholder="tags (comma-separated), e.g. exam, lecture">
-        </div>
+            <!-- Note content text area -->
+            <div style="margin-top: 16px;">
+              <textarea name="body" placeholder="Write your note..." required></textarea>
+            </div>
 
-        <!-- File upload input -->
-        <!-- The 'multiple' attribute allows users to select multiple files at once -->
-        <div style="margin-top: 16px;">
-          <label style="display: block; margin-bottom: 8px; color: #a0a3bd; font-size: 14px; font-weight: 600;">
-            📎 Attach Files (optional)
-          </label>
-          <input
-            type="file"
-            name="attachments"
-            multiple
-            accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.txt,.ppt,.pptx"
-            style="padding: 10px; background: rgba(23, 27, 46, 0.8); color: #e4e6eb; width: 100%;">
-          <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">
-            Allowed: PDFs, Images (PNG, JPG, GIF), Documents (DOC, DOCX, TXT, PPT, PPTX) • Max 16MB per file
-          </div>
-        </div>
+            <!-- Tags input -->
+            <div style="margin-top: 12px;">
+              <input type="text" name="tags" placeholder="tags (comma-separated), e.g. exam, lecture">
+            </div>
 
-        <!-- Submit button (aligned to right) -->
-        <div style="margin-top: 20px; text-align: right;">
-          <button type="submit">📝 Post Note</button>
+            <!-- File upload input -->
+            <!-- The 'multiple' attribute allows users to select multiple files at once -->
+            <div style="margin-top: 16px;">
+              <label style="display: block; margin-bottom: 8px; color: #a0a3bd; font-size: 14px; font-weight: 600;">
+                📎 Attach Files (optional)
+              </label>
+              <input
+                type="file"
+                name="attachments"
+                multiple
+                accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.txt,.ppt,.pptx"
+                style="padding: 10px; background: rgba(23, 27, 46, 0.8); color: #e4e6eb; width: 100%;">
+              <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">
+                Allowed: PDFs, Images (PNG, JPG, GIF), Documents (DOC, DOCX, TXT, PPT, PPTX) • Max 16MB per file
+              </div>
+            </div>
+
+            <!-- Submit button (aligned to right) -->
+            <div style="margin-top: 20px; text-align: right;">
+              <button type="submit">📝 Post Note</button>
+            </div>
+          </form>
         </div>
-      </form>
-    </div>
-    {% else %}
-    <!-- Message for anonymous users -->
-    <div id="create-form" class="create-section" style="text-align: center; padding: 40px 24px;">
-      <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
-      <div style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">Want to share your notes?</div>
-      <div style="color: #a0a3bd; margin-bottom: 24px;">Create an account or log in to post notes and contribute to the community.</div>
-      <div>
-        <a href="{{ url_for('login') }}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: transform 0.2s;">
-          Log In / Sign Up
-        </a>
       </div>
     </div>
     {% endif %}
@@ -814,5 +698,8 @@
       }
     }
   </script>
+
+  <!-- Theme toggle script -->
+  <script src="{{ url_for('static', filename='theme-toggle.js') }}"></script>
   </body>
 </html>
