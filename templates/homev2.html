@@ -17,29 +17,20 @@
 <body>
 <header class="tl-header">
     <div class="tl-container tl-nav">
-        <!-- REVERTED: Changed logo mark back to "TL" -->
+        <!-- Logo -->
         <div class="tl-logo">
-            <div class="tl-logo-mark">TL</div>
-            <div class="tl-logo-text">
-                <!-- REVERTED: Changed back to UIUC Turbolearn -->
-                <span class="tl-logo-main">UIUC Turbolearn</span>
-                <!-- CHANGE: Updated tagline to reflect note-sharing mission -->
-                <span class="tl-logo-sub">Share knowledge · Build community</span>
-            </div>
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UIUC Turbolearn Logo" style="height: 50px; width: auto; object-fit: contain;">
         </div>
 
-        <!-- CHANGE: Updated navigation links to point to new sections -->
-        <!-- Removed "How it works" and "For UIUC", added "Why We Built This" and "Meet the Team" -->
+        <!-- Updated navigation links -->
         <nav class="tl-nav-links">
             <a href="#features">Features</a>
             <a href="#why-we-built">Why We Built This</a>
             <a href="#meet-the-team">Meet the Team</a>
         </nav>
 
-        <!-- NEW: Added "Get started" button that links to the notes page (index route) -->
-        <!-- This button takes users to where they can view and create notes -->
+        <!-- Action buttons - removed login button -->
         <div class="tl-nav-actions">
-            <a href="#" class="btn btn-ghost">Log in</a>
             <a href="{{ url_for('notes') }}" class="btn btn-primary">Get started</a>
         </div>
     </div>

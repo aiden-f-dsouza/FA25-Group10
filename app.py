@@ -327,6 +327,39 @@ def extract_mentions(text):
     return mentions
 
 
+@app.template_filter('time_ago')
+def time_ago_filter(dt):
+    """
+    Convert a datetime to a human-readable 'time ago' format
+    Args:
+        dt: datetime object to convert
+    Returns:
+        String like "2 min ago", "1 hour ago", "3 days ago"
+    """
+    if not dt:
+        return ""
+
+    now = datetime.utcnow()
+    diff = now - dt
+
+    seconds = diff.total_seconds()
+
+    if seconds < 60:
+        return "just now"
+    elif seconds < 3600:  # Less than 1 hour
+        minutes = int(seconds / 60)
+        return f"{minutes} min ago"
+    elif seconds < 86400:  # Less than 1 day
+        hours = int(seconds / 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    elif seconds < 604800:  # Less than 1 week
+        days = int(seconds / 86400)
+        return f"{days} day{'s' if days != 1 else ''} ago"
+    else:
+        # For older dates, just show the date
+        return dt.strftime("%b %d, %Y")
+
+
 def _get_filtered_notes(args):
     """Return the filtered & sorted notes (full list) according to query args.
 
@@ -407,9 +440,13 @@ def _get_filtered_notes(args):
 # Homepage route - landing page
 @app.route("/")
 def home():
-    """Display the home page"""
+    """Display the home page with 3 most recent notes"""
     current_user = get_current_user()
-    return render_template("homev3.html", current_user=current_user)
+
+    # Fetch 3 most recent notes for the live feed display
+    recent_notes = Note.query.order_by(Note.created.desc()).limit(3).all()
+
+    return render_template("homev3.html", current_user=current_user, recent_notes=recent_notes)
 
 # Notes feed route - handles both displaying notes (GET) and creating new notes (POST)
 @app.route("/notes", methods=["GET", "POST"])
@@ -556,6 +593,12 @@ def notes():
             is_read=False
         ).order_by(Mention.created.desc()).all()
 
+    # Get list of note IDs that current user has liked
+    user_liked_notes = set()
+    if current_user:
+        user_likes = Like.query.filter_by(user_id=current_user.id).all()
+        user_liked_notes = {like.note_id for like in user_likes}
+
     # Send everything to the template to display
     return render_template(
         "index.html",
@@ -572,6 +615,7 @@ def notes():
         current_user=current_user,  # Current Supabase user
         tags=tags_sorted,  # Tag cloud data
         unread_mentions=unread_mentions,  # Unread @mentions for current user
+        user_liked_notes=user_liked_notes,  # Set of note IDs the user has liked
     )
 
 
@@ -604,10 +648,10 @@ def notes_api():
     return jsonify({"html": html, "has_more": has_more})
 
 
-# Endpoint to increment likes for a note
+# Endpoint to toggle like for a note
 @app.route("/like/<int:note_id>", methods=["POST"])
 def like_note(note_id):
-    """Add a like to a note. Prevents duplicate likes from the same user."""
+    """Toggle like for a note. Add if not liked, remove if already liked."""
     # Get current user (or use "Anonymous" if not logged in)
     current_user = get_current_user()
     user_id = current_user.id if current_user else "Anonymous"
@@ -615,8 +659,12 @@ def like_note(note_id):
     # Check if user already liked this note
     existing_like = Like.query.filter_by(note_id=note_id, user_id=user_id).first()
 
-    if not existing_like:
-        # Create a new like
+    if existing_like:
+        # Unlike - remove the existing like
+        db.session.delete(existing_like)
+        db.session.commit()
+    else:
+        # Like - create a new like
         new_like = Like(note_id=note_id, user_id=user_id)
         db.session.add(new_like)
         db.session.commit()

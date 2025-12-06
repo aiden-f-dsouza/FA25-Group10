@@ -404,7 +404,9 @@
 
   <!-- Navigation Header -->
   <nav class="navbar">
-    <a href="{{ url_for('home') }}" class="navbar-logo">📚 UIUC Turbolearn</a>
+    <a href="{{ url_for('home') }}" class="navbar-logo">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UIUC Turbolearn Logo" style="height: 45px; width: auto; object-fit: contain;">
+    </a>
 
     <!-- Search bar in navbar -->
     <div class="navbar-search">
@@ -507,6 +509,25 @@
 
           <!-- Hidden field to store combined class value for backend -->
           <input type="hidden" name="class_filter" id="class-filter-hidden" value="{{ selected_filter or 'All' }}">
+
+          <!-- Sort options (how to order the results) -->
+          <select name="sort_by" onchange="this.form.submit()" style="min-width: 150px;">
+            <option value="recent" {% if sort_by == "recent" %}selected{% endif %}>Most Recent</option>
+            <option value="oldest" {% if sort_by == "oldest" %}selected{% endif %}>Oldest First</option>
+            <option value="title" {% if sort_by == "title" %}selected{% endif %}>Title (A-Z)</option>
+            <option value="most_liked" {% if sort_by == "most_liked" %}selected{% endif %}>Most Liked</option>
+            <option value="most_commented" {% if sort_by == "most_commented" %}selected{% endif %}>Most Commented</option>
+            <option value="popular" {% if sort_by == "popular" %}selected{% endif %}>Top (Comments + Likes)</option>
+          </select>
+          <!-- Quick top filter button: sorts by popularity (comments then likes) -->
+          <button type="button" style="margin-left:8px; background: rgba(237, 137, 54, 0.15); border: 1px solid var(--accent-terracotta); color: var(--accent-terracotta); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(237, 137, 54, 0.25)'" onmouseout="this.style.background='rgba(237, 137, 54, 0.15)'" onclick="setPopularSort()">⭐ Top</button>
+          <!-- Reset filters button -->
+          <button type="button" style="margin-left:8px; background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.4); color: var(--text-secondary); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(102, 126, 234, 0.25)'" onmouseout="this.style.background='rgba(102, 126, 234, 0.15)'" onclick="resetFilters()">🔄 Reset Filters</button>
+
+          <!-- Note count display badge -->
+          <div class="note-count" style="margin-left: auto;">
+            {{ total }} notes
+          </div>
         </div>
       </form>
     </div>
@@ -585,7 +606,6 @@
             <span class="meta-tag">👤 {{ n.author }}</span>
             <span class="meta-tag">📅 {{ n.created.strftime('%Y-%m-%d %H:%M') }}</span>
             <span class="meta-tag">📚 {{ n.class_code }}</span>
-            <span class="meta-tag">❤️ {{ n.likes|length }}</span>
             {# Tags badges on note #}
             {% if n.get_tags_list() %}
               {% for tag in n.get_tags_list() %}
@@ -729,7 +749,19 @@
 
           <!-- Like button - available to all users -->
           <form method="POST" action="/like/{{ n.id }}" style="display:inline; margin-left:8px;">
-            <button type="submit" class="btn-small" title="Like">❤️ Like</button>
+            {% if n.id in user_liked_notes %}
+              <!-- Liked state - filled heart, accent color -->
+              <button type="submit" class="btn-small" title="Unlike" style="background: rgba(237, 137, 54, 0.2); border: 1px solid var(--accent-terracotta); color: var(--accent-terracotta); display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 14px;">❤️</span>
+                <span>{{ n.likes|length }}</span>
+              </button>
+            {% else %}
+              <!-- Unliked state - outline heart, subtle colors -->
+              <button type="submit" class="btn-small" title="Like" style="background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 14px;">🤍</span>
+                <span>{{ n.likes|length }}</span>
+              </button>
+            {% endif %}
           </form>
         </div>
 
@@ -913,6 +945,12 @@
         select.value = 'popular';
         select.form.submit();
       }
+    }
+
+    // Reset all filters to default values
+    function resetFilters() {
+      // Redirect to /notes with no query parameters (all default filters)
+      window.location.href = '/notes';
     }
 
     // Mark a specific mention as read

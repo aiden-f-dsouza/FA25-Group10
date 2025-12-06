@@ -22,11 +22,7 @@
         <nav class="tl-nav">
             <!-- Logo -->
             <a href="{{ url_for('home') }}" class="tl-logo">
-                <div class="tl-logo-mark">TL</div>
-                <div class="tl-logo-text">
-                    <span class="tl-logo-main">UIUC Turbolearn</span>
-                    <span class="tl-logo-sub">Share knowledge · Build community</span>
-                </div>
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UIUC Turbolearn Logo" style="height: 50px; width: auto; object-fit: contain;">
             </a>
 
             <!-- Navigation Links -->
@@ -45,7 +41,6 @@
                     <span class="sun-icon">☀️</span>
                 </button>
 
-                <a href="{{ url_for('login') }}" class="btn btn-ghost">Log in</a>
                 <a href="{{ url_for('notes') }}" class="btn btn-primary">Get started</a>
             </div>
         </nav>
@@ -107,27 +102,25 @@
                         </div>
                         
                         <ul class="tl-task-list">
-                            <li>
-                                <div>
-                                    <span class="tl-chip tl-chip-orange">CS124</span>
-                                    <p>Binary Trees & Recursion Overview</p>
-                                </div>
-                                <span class="tl-task-time">2 min ago</span>
-                            </li>
-                            <li>
-                                <div>
-                                    <span class="tl-chip tl-chip-sage">MATH231</span>
-                                    <p>Vector Spaces Chapter 4 Summary</p>
-                                </div>
-                                <span class="tl-task-time">15 min ago</span>
-                            </li>
-                            <li>
-                                <div>
-                                    <span class="tl-chip tl-chip-indigo">CS128</span>
-                                    <p>Linked Lists Implementation Notes</p>
-                                </div>
-                                <span class="tl-task-time">1 hour ago</span>
-                            </li>
+                            {% if recent_notes %}
+                                {% for note in recent_notes %}
+                                <li>
+                                    <div>
+                                        {% set chip_colors = ['orange', 'sage', 'indigo'] %}
+                                        {% set color = chip_colors[loop.index0 % 3] %}
+                                        <span class="tl-chip tl-chip-{{ color }}">{{ note.class_code }}</span>
+                                        <p>{{ note.title }}</p>
+                                    </div>
+                                    <span class="tl-task-time">{{ note.created|time_ago }}</span>
+                                </li>
+                                {% endfor %}
+                            {% else %}
+                                <li>
+                                    <div>
+                                        <p style="color: var(--text-secondary); font-style: italic;">No notes yet. Be the first to share!</p>
+                                    </div>
+                                </li>
+                            {% endif %}
                         </ul>
 
                         <div class="tl-progress-block">
@@ -314,6 +307,7 @@
 
             <!-- Project Credits Box -->
             <div style="text-align: center; margin-top: 48px; padding: 32px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm);">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="UIUC Turbolearn Logo" style="height: 80px; margin-bottom: 16px;">
                 <p style="color: var(--text-secondary); margin: 0; font-size: 1rem; line-height: 1.7;">
                     <strong style="color: var(--text-primary); font-family: var(--font-serif); font-size: 1.2rem; display: block; margin-bottom: 8px;">
                         CS124 Honors Project · Fall 2025
