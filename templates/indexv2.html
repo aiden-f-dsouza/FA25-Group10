@@ -170,6 +170,17 @@
             <span class="meta-tag">📚 {{ n.class }}</span>
           </div>
           <div class="note-body">{{ n.body }}</div>
+          {% if n.attachments %}
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            {% for a in n.attachments %}
+              {% if a.stored.lower().endswith('.png') or a.stored.lower().endswith('.jpg') or a.stored.lower().endswith('.jpeg') or a.stored.lower().endswith('.gif') %}
+                <a href="{{ a.url }}" target="_blank"><img src="{{ a.url }}" alt="{{ a.orig }}" style="max-width:180px; border-radius:8px; border:1px solid rgba(255,255,255,0.04);"></a>
+              {% else %}
+                <a href="{{ a.url }}" target="_blank" class="meta-tag">{{ a.orig }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
 
         <!-- Edit form -->
@@ -244,7 +255,7 @@
       
       <!-- Modal Body with Form -->
       <div class="modal-body">
-        <form method="POST" action="/notes-feed" id="create-note-form">
+        <form method="POST" action="/notes-feed" id="create-note-form" enctype="multipart/form-data">
           <div class="two">
             <input type="text" name="author" placeholder="Your name (optional)">
             <input type="text" name="title" placeholder="Note title">
@@ -258,20 +269,147 @@
             </select>
           </div>
 
-          <div style="margin-top: 16px;">
-            <textarea name="body" placeholder="Write your note..." required></textarea>
+          <!-- Editor + Preview -->
+          <div style="margin-top: 16px; display:grid; grid-template-columns: 1fr 1fr; gap:12px; align-items:start;">
+            <div>
+              <label for="md-editor" style="display:block; margin-bottom:8px; font-weight:700;">Write (Markdown supported)</label>
+              <textarea id="md-editor" name="body" placeholder="Write your note..." required style="min-height:160px;"></textarea>
+            </div>
+            <div>
+              <label style="display:block; margin-bottom:8px; font-weight:700;">Live Preview</label>
+              <div id="md-preview" class="note-body" style="min-height:160px; padding:12px; background:var(--tl-surface, rgba(23,27,46,0.6)); border-radius:8px; overflow:auto;"></div>
+            </div>
           </div>
 
-          <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+          <!-- Attachments: drag/drop, paste, multiple files -->
+          <div style="margin-top: 12px;">
+            <label style="display:block; margin-bottom:8px; font-weight:700;">Attachments (drag & drop, paste, or choose files)</label>
+            <div id="dropzone" style="border:2px dashed rgba(102,126,234,0.2); padding:12px; border-radius:8px; text-align:center;">
+              <div>Drop files here or click to choose</div>
+              <input id="file-input" type="file" name="attachments" multiple style="display:none;" />
+            </div>
+            <div id="attachment-list" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end; align-items:center;">
+            <div id="upload-status" style="color: #a0a3bd; font-size:13px;">No files selected</div>
             <button type="button" class="btn-small btn-cancel" onclick="closeModal()">Cancel</button>
-            <button type="submit" class="btn-search">📝 Post Note</button>
+            <button type="button" id="submit-ajax" class="btn-search">📝 Post Note</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  
+  <!-- Markdown renderer + paste/drag-drop/upload JS -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+  <script>
+  // Live markdown preview (debounced)
+  (function(){
+    const editor = document.getElementById('md-editor');
+    const preview = document.getElementById('md-preview');
+    if(editor && preview){
+      function render(){
+        const md = editor.value || '';
+        const html = DOMPurify.sanitize(marked.parse(md, { gfm:true, breaks:true }));
+        preview.innerHTML = html;
+      }
+      let t;
+      editor.addEventListener('input', ()=>{ clearTimeout(t); t = setTimeout(render, 250); });
+      render();
+    }
+  })();
+
+  // Drag & drop + paste + file preview + AJAX upload
+  (function(){
+    const drop = document.getElementById('dropzone');
+    const input = document.getElementById('file-input');
+    const list = document.getElementById('attachment-list');
+    const status = document.getElementById('upload-status');
+    const submitBtn = document.getElementById('submit-ajax');
+    const form = document.getElementById('create-note-form');
+    if(!form) return;
+    let files = [];
+
+    function renderList(){
+      list.innerHTML = '';
+      if(files.length===0){ status.textContent = 'No files selected'; return; }
+      status.textContent = files.length + ' file(s) ready';
+      files.forEach((f, idx)=>{
+        const card = document.createElement('div');
+        card.style.minWidth='120px'; card.style.border='1px solid rgba(255,255,255,0.04)'; card.style.padding='8px'; card.style.borderRadius='8px'; card.style.background='rgba(0,0,0,0.04)';
+        const name = document.createElement('div'); name.textContent = f.name; name.style.fontSize='13px'; name.style.marginBottom='8px';
+        card.appendChild(name);
+        if(f.type && f.type.startsWith('image/')){
+          const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.style.maxWidth='120px'; img.style.maxHeight='80px'; img.style.display='block'; img.style.marginBottom='8px'; card.appendChild(img);
+        }
+        const p = document.createElement('progress'); p.max=100; p.value=0; p.style.width='100%'; p.id='prog-'+idx; card.appendChild(p);
+        const remove = document.createElement('button'); remove.textContent='Remove'; remove.style.marginTop='8px'; remove.className='chip'; remove.addEventListener('click', ()=>{ files.splice(idx,1); renderList(); });
+        card.appendChild(remove);
+        list.appendChild(card);
+      });
+    }
+
+    drop.addEventListener('click', ()=> input.click());
+    input.addEventListener('change', (e)=>{ for(const f of e.target.files) files.push(f); renderList(); input.value=''; });
+
+    drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.style.borderColor='rgba(102,126,234,0.6)'; });
+    drop.addEventListener('dragleave', (e)=>{ drop.style.borderColor='rgba(102,126,234,0.2)'; });
+    drop.addEventListener('drop', (e)=>{ e.preventDefault(); drop.style.borderColor='rgba(102,126,234,0.2)'; for(const f of e.dataTransfer.files) files.push(f); renderList(); });
+
+    // paste images from clipboard
+    document.addEventListener('paste', (e)=>{
+      const items = e.clipboardData && e.clipboardData.items;
+      if(!items) return;
+      for(const it of items){
+        if(it.kind==='file'){
+          const f = it.getAsFile(); if(f) files.push(f);
+        }
+      }
+      renderList();
+    });
+
+    // AJAX submit with per-file progress
+    submitBtn.addEventListener('click', ()=>{
+      const fd = new FormData(form);
+      files.forEach(f=> fd.append('attachments', f));
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', form.action || '/notes-feed');
+
+      xhr.upload.addEventListener('progress', (e)=>{
+        if(e.lengthComputable){
+          const total = e.total;
+          // approximate per-file distribution
+          let acc = 0;
+          files.forEach((f, idx)=>{
+            const p = document.getElementById('prog-'+idx);
+            if(p){
+              const ratio = Math.min(100, Math.floor((e.loaded/total)*100));
+              p.value = ratio;
+            }
+          });
+        }
+      });
+
+      xhr.onreadystatechange = function(){
+        if(xhr.readyState===4){
+          if(xhr.status>=200 && xhr.status<300){
+            window.location.reload();
+          } else {
+            alert('Upload failed: '+xhr.statusText);
+          }
+        }
+      };
+
+      xhr.send(fd);
+      // optimistic UI
+      files.forEach((f,idx)=>{ const p=document.getElementById('prog-'+idx); if(p){ p.removeAttribute('value'); } });
+    });
+
+  })();
+  </script>
 
 </body>
 </html>

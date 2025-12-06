@@ -1,4 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+import os
+from uuid import uuid4
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 
 #new instance of flask as an app
@@ -119,6 +122,22 @@ def index():
         hashtags.update([t for t in tags if t])
         hashtags = [h.lstrip('#') for h in hashtags if h]
 
+        # handle attachments (files uploaded)
+        attachments = []
+        upload_dir = os.path.join(app.static_folder, 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        for f in request.files.getlist('attachments'):
+            if f and f.filename:
+                orig = secure_filename(f.filename)
+                stored = f"{uuid4().hex}_{orig}"
+                path = os.path.join(upload_dir, stored)
+                f.save(path)
+                attachments.append({
+                    'orig': orig,
+                    'stored': stored,
+                    'url': url_for('static', filename=f'uploads/{stored}')
+                })
+
         if body:
             NOTES.append({
                 "id": next_id(),
@@ -132,6 +151,7 @@ def index():
                 "comments": [],  # list of comment dicts: {author, body, created}
                 "tags": tags,
                 "hashtags": hashtags,
+                "attachments": attachments,
             })
         # returns index.html (the main page)
         return redirect(url_for("index"))
