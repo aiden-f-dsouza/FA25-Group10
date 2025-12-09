@@ -6,3 +6,4 @@ python-dotenv
 psycopg[binary]
 flask-supabase
 gunicorn
+openai

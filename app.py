@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from supabase import create_client, Client
+from openai import OpenAI
 import os
 import uuid
 from functools import wraps
@@ -17,6 +18,9 @@ load_dotenv()
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
+
+# Initialize OpenAI client for AI features
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Create a new instance of Flask as our web application
 app = Flask(__name__)
@@ -1194,7 +1198,7 @@ def summarizer():
 
 @app.route("/api/summarize", methods=["POST"])
 def summarize():
-    """API endpoint for AI text summarization (Aiden's feature)"""
+    """API endpoint for AI-powered note summarization using OpenAI"""
     try:
         data = request.get_json()
         notes = data.get("notes", "").strip()
@@ -1202,130 +1206,50 @@ def summarize():
         if not notes:
             return jsonify({"error": "No notes provided"}), 400
 
-        # Simple extractive summarization (free, no API needed)
-        # Split into sentences more carefully to avoid splitting on decimals
-
-        # Replace common abbreviations and decimals temporarily
-        text = notes
-        text = re.sub(r'(\d)\.(\d)', r'\1DECIMAL\2', text)  # Protect decimals like 43.0
-        text = re.sub(r'\b(Dr|Mr|Mrs|Ms|Prof|Sr|Jr|vs|etc|i\.e|e\.g)\.', r'\1PERIOD', text, flags=re.IGNORECASE)
-
-        # Now split on sentence boundaries
-        sentences = re.split(r'[.!?]+\s+', text)
-
-        # Restore the protected patterns
-        sentences = [s.replace('DECIMAL', '.').replace('PERIOD', '.').strip()
-                    for s in sentences if s.strip() and len(s.strip()) > 15]
-
-        if len(sentences) == 0:
-            return jsonify({"error": "Could not parse text into sentences"}), 400
-
-        # If text is already short, return as-is
-        if len(notes) < 200:
+        # Check if notes are too short to summarize
+        if len(notes) < 100:
             return jsonify({"summary": notes})
 
-        # Score sentences based on various factors
-        scored_sentences = []
-        seen_phrases = set()
+        # Use OpenAI GPT-4 to generate a comprehensive summary
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",  # Fast and cost-effective
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are an expert note-taking assistant for students. Your job is to create clear,
+                    comprehensive summaries of lecture notes and study materials.
 
-        for idx, sentence in enumerate(sentences):
-            score = 0
-            sentence_lower = sentence.lower()
+                    Guidelines:
+                    - Create well-organized bullet points highlighting key concepts
+                    - Preserve important definitions, formulas, and technical terms
+                    - Maintain the logical flow of information
+                    - Include relevant examples if present in the original notes
+                    - Keep the summary concise but informative (aim for 30-40% of original length)
+                    - Use clear, academic language appropriate for students"""
+                },
+                {
+                    "role": "user",
+                    "content": f"Please summarize these notes:\n\n{notes}"
+                }
+            ],
+            temperature=0.3,  # Lower temperature for more focused, consistent output
+            max_tokens=1000   # Limit response length
+        )
 
-            # Longer sentences (but not too long) tend to be more informative
-            length = len(sentence.split())
-            if 15 <= length <= 35:
-                score += 3
-            elif 10 <= length <= 50:
-                score += 2
-            elif length > 50:
-                score += 1
-
-            # Position matters: first few sentences often introduce topic
-            if idx < 3:
-                score += 4
-            # Last sentence often has conclusion
-            elif idx == len(sentences) - 1:
-                score += 2
-
-            # Sentences with data/numbers are valuable
-            if re.search(r'\d+\.?\d*%|\$\d+|USD \d+|\d+\.\d+', sentence):
-                score += 4
-
-            # Sentences with keywords like "important", "key", "main" are valuable
-            important_words = ['important', 'key', 'main', 'significant', 'primary',
-                             'critical', 'essential', 'fundamental', 'major', 'conclude',
-                             'expected', 'projected', 'growth', 'market size', 'cagr', 'forecast']
-            for word in important_words:
-                if word in sentence_lower:
-                    score += 2
-                    break
-
-            # Penalize repetitive phrases
-            repetitive_phrases = ['dominated the global market in 2022 and accounted',
-                                'accounted for a revenue share', 'segment accounted for',
-                                'segment dominated']
-            for phrase in repetitive_phrases:
-                if phrase in sentence_lower:
-                    score -= 3
-                    break
-
-            # Avoid very short or likely metadata sentences
-            if length < 8 or any(x in sentence_lower for x in ['copyright', 'login', 'sign up', 'home', 'logo', 'click here', 'download free sample', 'to learn more']):
-                score -= 10
-
-            # Penalize if very similar to already selected sentences
-            sentence_key = ' '.join(sentence_lower.split()[:5])  # First 5 words
-            if sentence_key in seen_phrases:
-                score -= 4
-            seen_phrases.add(sentence_key)
-
-            scored_sentences.append((score, sentence, idx))
-
-        # Sort by score and take top sentences
-        scored_sentences.sort(reverse=True, key=lambda x: x[0])
-
-        # Make summary length proportional to input - aim for 20-30% of original sentences
-        if len(sentences) <= 5:
-            num_sentences = max(2, len(sentences) - 2)  # Keep most if very short
-        elif len(sentences) <= 15:
-            num_sentences = max(3, int(len(sentences) * 0.3))  # 30% for medium text
-        else:
-            num_sentences = max(4, min(8, int(len(sentences) * 0.25)))  # 25% for longer text, cap at 8
-
-        top_sentences = scored_sentences[:num_sentences]
-
-        # Re-sort by original position to maintain flow
-        top_sentences.sort(key=lambda x: x[2])
-
-        # Build summary with formatting - each sentence on its own line or bullet
-        summary_parts = []
-        for _, sentence, _ in top_sentences:
-            sentence = sentence.strip()
-            if not sentence.endswith(('.', '!', '?')):
-                sentence += '.'
-            summary_parts.append(sentence)
-
-        # Format with bullet points for better readability
-        formatted_parts = ['• ' + part for part in summary_parts]
-        summary_text = '\n'.join(formatted_parts)
-
-        # Only enforce max length if summary is unreasonably long
-        original_length = len(notes)
-        if len(summary_text) > original_length * 0.9:
-            # Summary is too close to original, cut more aggressively
-            target_length = int(original_length * 0.6)
-            truncated = summary_text[:target_length]
-            last_period = max(truncated.rfind('.'), truncated.rfind('!'), truncated.rfind('?'))
-            if last_period > target_length * 0.5:
-                summary_text = truncated[:last_period + 1]
-            else:
-                summary_text = truncated + "..."
-
-        return jsonify({"summary": summary_text})
+        summary = response.choices[0].message.content.strip()
+        return jsonify({"summary": summary})
 
     except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+        error_message = str(e)
+        print(f"OpenAI summarization error: {error_message}")
+
+        # Provide helpful error messages
+        if "api_key" in error_message.lower():
+            return jsonify({"error": "OpenAI API key not configured. Please add your API key to the .env file."}), 500
+        elif "quota" in error_message.lower() or "insufficient" in error_message.lower():
+            return jsonify({"error": "OpenAI API quota exceeded. Please check your API usage."}), 500
+        else:
+            return jsonify({"error": f"Failed to generate summary: {error_message}"}), 500
 
 
 # FILE DOWNLOAD ROUTE

@@ -166,7 +166,8 @@
     <div class="tl-container">
 
       <div class="info-box" style="margin-top: 24px;">
-        <i class="ph ph-lightbulb"></i> This tool summarizes your notes. Simply paste your text below and click "Summarize" to get a concise version. Perfect for condensing lecture notes or study materials!
+        <i class="ph ph-sparkle"></i> <strong>AI-Powered Note Summarization</strong><br>
+        Paste your lecture notes, textbook excerpts, or study materials below. Our AI will create a clear, organized summary highlighting key concepts, definitions, and important information. Perfect for exam prep and quick reviews!
       </div>
 
       <!-- Main Input Section -->
@@ -189,7 +190,7 @@
 
         <div class="loading-message" id="loading">
           <div class="loading-spinner"></div>
-          Generating summary... This may take a moment.
+          AI is analyzing your notes and generating a summary... This may take a few seconds.
         </div>
 
         <div class="error-message" id="error-msg"></div>
@@ -197,8 +198,11 @@
 
       <!-- Summary Output Section -->
       <div class="summary-output" id="summary-output">
-        <div class="summary-title"><i class="ph ph-file-text"></i> Summary</div>
+        <div class="summary-title"><i class="ph ph-sparkle"></i> AI-Generated Summary</div>
         <div class="summary-text" id="summary-text"></div>
+        <button id="copy-btn" class="btn btn-secondary" style="margin-top: 16px; width: 100%;">
+          <i class="ph ph-copy"></i> Copy Summary
+        </button>
       </div>
 
     </div>
@@ -267,6 +271,21 @@
       errorMsg.textContent = message;
       errorMsg.classList.add('show');
     }
+
+    // Copy summary to clipboard
+    const copyBtn = document.getElementById('copy-btn');
+    copyBtn.addEventListener('click', async function() {
+      const summary = summaryText.textContent;
+      try {
+        await navigator.clipboard.writeText(summary);
+        copyBtn.innerHTML = '<i class="ph ph-check"></i> Copied!';
+        setTimeout(() => {
+          copyBtn.innerHTML = '<i class="ph ph-copy"></i> Copy Summary';
+        }, 2000);
+      } catch (err) {
+        showError('Failed to copy to clipboard');
+      }
+    });
   </script>
 </body>
 </html>
