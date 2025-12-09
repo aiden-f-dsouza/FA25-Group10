@@ -3,6 +3,6 @@ Flask-SQLAlchemy
 selenium
 supabase
 python-dotenv
-psycopg2-binary
+psycopg[binary]
 flask-supabase
 gunicorn
