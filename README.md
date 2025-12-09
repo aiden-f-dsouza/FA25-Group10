@@ -1,4 +1,4 @@
-# UIUC TurboLearn
+# Illinotes
 
 Group 10 - FA25
 
