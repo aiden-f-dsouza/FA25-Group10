@@ -151,29 +151,5 @@ Currently supporting 10+ UIUC courses:
 - ENG100, RHET105
 - PHY211, PHY212
 
-## Team Members
-
-- **Aiden D'Souza** (aidenfd2) - Frontend Developer
-  - Major: Computer Science + Education
-  - Built the homepage and focused on user experience design
-
-- **Ammar Jiruwala** (ammarj2) - Backend Developer
-  - Major: Computer Science
-  - Developed backend Flask routes, filtering, search functionality, and database management
-
-- **Sriram Natarajan** (sriram6) - Project Manager
-  - Major: Computer Science + Linguistics
-  - Coordinated team efforts, managed timelines, and ensured project goals aligned with user needs
-
-## License
-
-Built as a CS124 Honors group project at the University of Illinois Urbana-Champaign.
-
 ## Future Enhancements
-
-- Mobile app version
-- Real-time collaborative editing
-- Advanced analytics for studying patterns
-- Integration with Canvas/Moodle
-- Expanded course catalog
-- PDF annotation tools
+ - tbd
