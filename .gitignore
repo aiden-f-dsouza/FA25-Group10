@@ -17,7 +17,19 @@ Thumbs.db
 # Temporary files
 tmep/
 
+# Database and user uploads (runtime data - should not be committed)
+instance/
+uploads/
+
 # Project-specific
 CLAUDE.md
 
-uploads/
+# env file and personal learning guide
+.env
+LEARNING_GUIDE.md
+
+# SQL migration files (local development only)
+add_comment_user_id.sql
+add_tags_column.sql
+add_tags_column.sql.backup
+*.sql.backup

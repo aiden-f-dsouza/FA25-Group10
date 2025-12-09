@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - UIUC Turbolearn</title>
+
+    <!-- External CSS System -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='turbolearn-darkmode.css') }}">
+
+    <!-- Typography System -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .signup-container {
+            background: var(--bg-card);
+            padding: 48px;
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 440px;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-mark {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--accent-terracotta), var(--accent-ochre));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white;
+            margin: 0 auto 16px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            text-align: center;
+            margin: 0 0 8px;
+            font-size: 1.75rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-tertiary);
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+            background: var(--bg-paper-dark);
+            color: var(--text-primary);
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            font-family: var(--font-sans);
+        }
+
+        input:hover {
+            border-color: var(--border-medium);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-terracotta);
+            box-shadow: 0 0 0 3px rgba(198, 107, 77, 0.1);
+        }
+
+        .password-hint {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            margin-top: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--accent-terracotta);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .error {
+            background: #dc2626;
+            color: white;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .success {
+            background: var(--accent-sage);
+            color: white;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .link-section {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .link-section a {
+            color: var(--accent-terracotta);
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.2s ease;
+        }
+
+        .link-section a:hover {
+            opacity: 0.8;
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: transparent;
+            border: 1.5px solid var(--border-medium);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-paper-dark);
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+            transform: rotate(20deg);
+        }
+
+        [data-theme="light"] .theme-toggle .moon-icon { display: inline; }
+        [data-theme="light"] .theme-toggle .sun-icon { display: none; }
+        [data-theme="dark"] .theme-toggle .moon-icon { display: none; }
+        [data-theme="dark"] .theme-toggle .sun-icon { display: inline; }
+    </style>
+</head>
+<body>
+    <!-- Theme toggle button -->
+    <button class="theme-toggle" aria-label="Toggle dark mode">
+        <span class="moon-icon"><i class="ph ph-moon"></i></span>
+        <span class="sun-icon"><i class="ph ph-sun"></i></span>
+    </button>
+
+    <div class="signup-container">
+        <div class="logo-section">
+            <div class="logo-mark">TL</div>
+            <h1>Join Turbolearn</h1>
+            <p class="subtitle">Create an account to start sharing notes</p>
+        </div>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        {% if success %}
+        <div class="success">{{ success }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="your.email@illinois.edu" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Create a password" required minlength="6">
+                <div class="password-hint">Must be at least 6 characters</div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" required minlength="6">
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div class="link-section">
+            Already have an account? <a href="{{ url_for('login') }}">Sign in</a>
+        </div>
+
+        <div class="link-section">
+            <a href="{{ url_for('home') }}">← Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Theme toggle script -->
+    <script src="{{ url_for('static', filename='theme-toggle.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - {{ user.email }} - UIUC Turbolearn</title>
+
+    <!-- External CSS System -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='turbolearn-darkmode.css') }}">
+
+    <!-- Typography System -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        body {
+            padding: 80px 0 40px;
+            min-height: 100vh;
+        }
+
+        /* Header Navigation */
+        .header-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-overlay);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+            z-index: 1000;
+            padding: 16px 0;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-serif);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--accent-terracotta);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-family: var(--font-sans);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-medium);
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .btn-logout {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background: #b91c1c;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1.5px solid var(--border-medium);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-card);
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+            transform: rotate(20deg);
+        }
+
+        [data-theme="light"] .theme-toggle .moon-icon { display: inline; }
+        [data-theme="light"] .theme-toggle .sun-icon { display: none; }
+        [data-theme="dark"] .theme-toggle .moon-icon { display: none; }
+        [data-theme="dark"] .theme-toggle .sun-icon { display: inline; }
+
+        /* Main Content */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            font-weight: 900;
+            margin: 0 0 8px;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .page-subtitle {
+            color: var(--text-tertiary);
+            font-size: 1rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            padding: 32px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card h2 {
+            font-family: var(--font-serif);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0 0 20px;
+            color: var(--text-primary);
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 120px;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+            background: var(--bg-paper-dark);
+            color: var(--text-primary);
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            font-family: var(--font-sans);
+        }
+
+        input:hover {
+            border-color: var(--border-medium);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-terracotta);
+            box-shadow: 0 0 0 3px rgba(198, 107, 77, 0.1);
+        }
+
+        .btn-submit {
+            padding: 12px 24px;
+            background: var(--accent-terracotta);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-submit:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .error {
+            background: #dc2626;
+            color: white;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .success {
+            background: var(--accent-sage);
+            color: white;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Notes Section */
+        .note-card {
+            background: var(--bg-paper-dark);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+
+        .note-card:hover {
+            border-color: var(--border-medium);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .note-card h3 {
+            font-family: var(--font-serif);
+            margin: 0 0 8px;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .note-meta {
+            color: var(--text-tertiary);
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .note-meta strong {
+            color: var(--text-secondary);
+        }
+
+        .note-preview {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .no-notes {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-tertiary);
+        }
+
+        .no-notes-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .header-actions {
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+
+            .card {
+                padding: 24px;
+            }
+
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .info-label {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Navigation -->
+    <nav class="header-nav">
+        <div class="header-container">
+            <a href="{{ url_for('home') }}" class="logo"><i class="ph ph-book-open"></i> UIUC Turbolearn</a>
+            <div class="header-actions">
+                <a href="{{ url_for('notes') }}" class="btn btn-ghost">Back to Notes</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="moon-icon"><i class="ph ph-moon"></i></span>
+                    <span class="sun-icon"><i class="ph ph-sun"></i></span>
+                </button>
+                <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="page-header">
+            <h1>My Profile</h1>
+            <p class="page-subtitle">Manage your account and view your notes</p>
+        </div>
+
+        <!-- User Info Card -->
+        <div class="card">
+            <h2>Account Information</h2>
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ user.email }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Total Notes:</span>
+                    <span class="info-value">{{ notes|length }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="card">
+            <h2>Change Password</h2>
+
+            {% if password_error %}
+            <div class="error">{{ password_error }}</div>
+            {% endif %}
+
+            {% if password_success %}
+            <div class="success">{{ password_success }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('change_password') }}">
+                <div class="form-group">
+                    <label for="current_password">Current Password</label>
+                    <input type="password" id="current_password" name="current_password" placeholder="Enter current password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password">New Password (minimum 6 characters)</label>
+                    <input type="password" id="new_password" name="new_password" placeholder="Enter new password" required minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password" required minlength="6">
+                </div>
+
+                <button type="submit" class="btn-submit">Change Password</button>
+            </form>
+        </div>
+
+        <!-- My Notes Card -->
+        <div class="card">
+            <h2>My Notes</h2>
+            {% if notes %}
+                {% for note in notes %}
+                <div class="note-card">
+                    <h3>{{ note.title }}</h3>
+                    <p class="note-meta">
+                        <strong>Class:</strong> {{ note.class_code }} |
+                        <strong>Created:</strong> {{ note.created.strftime('%B %d, %Y at %I:%M %p') }}
+                    </p>
+                    <p class="note-preview">{{ note.body[:200] }}{% if note.body|length > 200 %}...{% endif %}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-notes">
+                    <div class="no-notes-icon"><i class="ph ph-note-pencil"></i></div>
+                    <p style="margin: 0 0 16px;">You haven't created any notes yet.</p>
+                    <a href="{{ url_for('notes') }}" class="btn btn-submit">Create Your First Note</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Theme toggle script -->
+    <script src="{{ url_for('static', filename='theme-toggle.js') }}"></script>
+</body>
+</html>
