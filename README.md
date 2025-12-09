@@ -4,8 +4,6 @@
 
 A collaborative note-sharing platform built by UIUC students, for UIUC students.
 
-[MVP Documentation](https://docs.google.com/document/d/1oC2AsTqQxLYonm2EUvAERGEcO07wXOhU5fIP45uL-j8/edit?usp=sharing)
-
 ## Project Overview
 
 UIUC Turbolearn is a centralized platform where students can post, search, and organize class notes by course. Stop searching through endless GroupMe threads - keep your notes organized, searchable, and accessible to everyone who needs them.
