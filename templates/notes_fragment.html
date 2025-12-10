@@ -21,7 +21,7 @@
       {# Hashtags badges on note #}
       {% if n.get_hashtags() %}
         {% for ht in n.get_hashtags() %}
-          <a href="/?tag_filter={{ ht }}" class="meta-tag" style="text-decoration:none; background:rgba(245,101,101,0.2); color:#c53030;">#{{ ht }}</a>
+          <a href="/?tag_filter={{ ht }}" class="meta-tag">#{{ ht }}</a>
         {% endfor %}
       {% endif %}
     </div>
@@ -39,10 +39,7 @@
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
         {% for attachment in n.attachments %}
         <!-- Each attachment as a download link with file type badge -->
-        <a href="/download/{{ attachment.id }}"
-           style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(102, 126, 234, 0.2); border-radius: 8px; color: #667eea; text-decoration: none; font-size: 13px; transition: all 0.3s ease; border: 1px solid rgba(102, 126, 234, 0.3);"
-           onmouseover="this.style.background='rgba(102, 126, 234, 0.3)'; this.style.transform='translateY(-2px)'"
-           onmouseout="this.style.background='rgba(102, 126, 234, 0.2)'; this.style.transform='translateY(0)'">
+        <a href="/download/{{ attachment.id }}" class="attachment-link">
           <!-- File type icon based on extension -->
           {% if attachment.file_type == 'pdf' %}<i class="ph ph-file-pdf"></i>
           {% elif attachment.file_type in ['png', 'jpg', 'jpeg', 'gif'] %}<i class="ph ph-image"></i>
@@ -167,7 +164,10 @@
 
     <!-- Like button - available to all users -->
     <form method="POST" action="/like/{{ n.id }}" style="display:inline; margin-left:8px;">
-      <button type="submit" class="btn-small" title="Like"><i class="ph-fill ph-heart" style="color: #ef4444;"></i> Like</button>
+      <button type="submit" class="like-button {% if n.id in user_liked_notes %}liked{% endif %}" title="Like">
+        <i class="{% if n.id in user_liked_notes %}ph-fill{% else %}ph{% endif %} ph-heart"></i>
+        {{ n.likes | length }}
+      </button>
     </form>
   </div>
 
@@ -175,9 +175,9 @@
   <div style="margin-top: 12px;">
     <form method="POST" action="/comment/{{ n.id }}" style="display:flex; gap:8px; align-items:center;">
       {% if current_user is none %}
-        <input type="text" name="comment_author" placeholder="Name" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(102,126,234,0.2); background: rgba(23,27,46,0.6); color:#e4e6eb; font-size:13px; width:140px;">
+        <input type="text" name="comment_author" placeholder="Name" class="comment-input comment-author-input">
       {% endif %}
-      <input type="text" name="comment_body" placeholder="Add a short comment" style="flex:1; padding:8px 12px; border-radius:8px; border:1px solid rgba(102,126,234,0.2); background: rgba(23,27,46,0.6); color:#e4e6eb; font-size:13px;">
+      <input type="text" name="comment_body" placeholder="Add a short comment" class="comment-input comment-body-input">
       <button type="submit" class="btn-small btn-edit"><i class="ph ph-chat-circle"></i></button>
     </form>
   </div>

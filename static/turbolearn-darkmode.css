@@ -47,6 +47,30 @@
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 24px;
+
+    /* Like button states */
+    --like-inactive: #6B7280;        /* Gray for unfilled state */
+    --like-active: #EF4444;          /* Red for filled state */
+    --like-hover: #DC2626;           /* Darker red on hover */
+
+    /* Comment fields - match main input styling */
+    --comment-bg: var(--bg-paper-dark);
+    --comment-border: var(--border-light);
+    --comment-text: var(--text-primary);
+    --comment-focus-border: var(--accent-terracotta);
+
+    /* Attachments */
+    --attachment-bg: rgba(196, 107, 77, 0.1);   /* Subtle terracotta tint */
+    --attachment-border: rgba(196, 107, 77, 0.3);
+    --attachment-text: #C66B4D;
+
+    /* Tags/Hashtags */
+    --tag-bg: rgba(196, 107, 77, 0.15);
+    --tag-text: #9F5539;
+    --tag-border: rgba(196, 107, 77, 0.25);
+
+    /* Hover state */
+    --hover-light: rgba(0, 0, 0, 0.05);
 }
 
 /* ============================================
@@ -81,6 +105,30 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
     --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.6);
+
+    /* Like button states */
+    --like-inactive: #9CA3AF;        /* Lighter gray for visibility */
+    --like-active: #F87171;          /* Softer red for dark mode */
+    --like-hover: #EF4444;
+
+    /* Comment fields - match main input styling */
+    --comment-bg: var(--bg-paper-dark);
+    --comment-border: var(--border-light);
+    --comment-text: var(--text-primary);
+    --comment-focus-border: var(--accent-terracotta);
+
+    /* Attachments */
+    --attachment-bg: rgba(212, 130, 107, 0.15);
+    --attachment-border: rgba(212, 130, 107, 0.3);
+    --attachment-text: #D4826B;
+
+    /* Tags/Hashtags */
+    --tag-bg: rgba(212, 130, 107, 0.2);
+    --tag-text: #E59A7F;
+    --tag-border: rgba(212, 130, 107, 0.3);
+
+    /* Hover state */
+    --hover-light: rgba(255, 255, 255, 0.05);
 }
 
 /* ============================================

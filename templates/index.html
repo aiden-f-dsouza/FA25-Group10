@@ -563,10 +563,10 @@
           </form>
 
           <!-- IMPORTANT: Keep the Top button from index.html -->
-          <button type="button" style="margin-left:8px;" onclick="setPopularSort()"><i class="ph ph-star"></i> Top</button>
+          <button type="button" class="btn-small btn-filter" style="margin-left:8px;" onclick="setPopularSort()"><i class="ph ph-star"></i> Top</button>
 
           <!-- Clear Filters button -->
-          <button type="button" class="btn-small" style="margin-left:8px;" onclick="resetFilters()"><i class="ph ph-x-circle"></i> Clear Filters</button>
+          <button type="button" class="btn-small btn-filter" style="margin-left:8px;" onclick="resetFilters()"><i class="ph ph-x-circle"></i> Clear Filters</button>
         </div>
       </div>
 
@@ -604,7 +604,7 @@
             {# Hashtags badges on note #}
             {% if n.get_hashtags() %}
               {% for ht in n.get_hashtags() %}
-                <a href="/notes?tag_filter={{ ht }}" class="meta-tag" style="text-decoration:none; background:rgba(245,101,101,0.2); color:#c53030;">#{{ ht }}</a>
+                <a href="/notes?tag_filter={{ ht }}" class="meta-tag">#{{ ht }}</a>
               {% endfor %}
             {% endif %}
           </div>
@@ -614,18 +614,15 @@
 
           <!-- Attachments section (only show if note has attachments) -->
           {% if n.attachments %}
-          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(102, 126, 234, 0.2);">
-            <div style="font-size: 13px; font-weight: 600; color: #a0a3bd; margin-bottom: 8px;">
+          <div class="attachments-container">
+            <div class="attachments-title">
               <i class="ph ph-paperclip"></i> Attachments ({{ n.attachments|length }}):
             </div>
             <!-- List of downloadable attachments -->
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               {% for attachment in n.attachments %}
               <!-- Each attachment as a download link with file type badge -->
-              <a href="/download/{{ attachment.id }}"
-                 style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(102, 126, 234, 0.2); border-radius: 8px; color: #667eea; text-decoration: none; font-size: 13px; transition: all 0.3s ease; border: 1px solid rgba(102, 126, 234, 0.3);"
-                 onmouseover="this.style.background='rgba(102, 126, 234, 0.3)'; this.style.transform='translateY(-2px)'"
-                 onmouseout="this.style.background='rgba(102, 126, 234, 0.2)'; this.style.transform='translateY(0)'">
+              <a href="/download/{{ attachment.id }}" class="attachment-link">
                 <!-- File type icon based on extension -->
                 {% if attachment.file_type == 'pdf' %}<i class="ph ph-file-pdf"></i>
                 {% elif attachment.file_type in ['png', 'jpg', 'jpeg', 'gif'] %}<i class="ph ph-image"></i>
@@ -678,21 +675,21 @@
 
             <!-- Existing attachments management -->
             {% if n.attachments %}
-            <div style="margin-bottom: 12px; padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
-              <div style="font-size: 13px; font-weight: 600; color: #a0a3bd; margin-bottom: 8px;">
+            <div style="margin-bottom: 12px; padding: 12px; background: var(--bg-paper-dark); border-radius: 8px;">
+              <div class="attachments-title">
                 <i class="ph ph-paperclip"></i> Existing Attachments:
               </div>
               {% for attachment in n.attachments %}
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                 <input type="checkbox" name="delete_attachments" value="{{ attachment.id }}" id="delete-{{ attachment.id }}">
-                <label for="delete-{{ attachment.id }}" style="cursor: pointer; font-size: 13px; color: #e4e6eb;">
+                <label for="delete-{{ attachment.id }}" style="cursor: pointer; font-size: 13px; color: var(--text-primary);">
                   {% if attachment.file_type == 'pdf' %}<i class="ph ph-file-pdf"></i>
                   {% elif attachment.file_type in ['png', 'jpg', 'jpeg', 'gif'] %}<i class="ph ph-image"></i>
                   {% elif attachment.file_type in ['doc', 'docx'] %}<i class="ph ph-file-doc"></i>
                   {% elif attachment.file_type in ['ppt', 'pptx'] %}<i class="ph ph-file-ppt"></i>
                   {% else %}<i class="ph ph-paperclip"></i>
                   {% endif %}
-                  {{ attachment.original_filename }} <span style="color: #f44336;">(check to delete)</span>
+                  {{ attachment.original_filename }} <span style="color: #dc2626;">(check to delete)</span>
                 </label>
               </div>
               {% endfor %}
@@ -701,7 +698,7 @@
 
             <!-- New attachments upload -->
             <div style="margin-bottom: 12px;">
-              <label style="display: block; margin-bottom: 8px; color: #a0a3bd; font-size: 14px; font-weight: 600;">
+              <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 600;">
                 <i class="ph ph-paperclip"></i> Add New Attachments (optional)
               </label>
               <input
@@ -738,47 +735,50 @@
 
           <!-- Like button - available to all users -->
           <form method="POST" action="/like/{{ n.id }}" style="display:inline; margin-left:8px;">
-            <button type="submit" class="btn-small" title="Like"><i class="ph-fill ph-heart" style="color: #ef4444;"></i> Like</button>
+            <button type="submit" class="like-button {% if n.id in user_liked_notes %}liked{% endif %}" title="Like">
+              <i class="{% if n.id in user_liked_notes %}ph-fill{% else %}ph{% endif %} ph-heart"></i>
+              {{ n.likes | length }}
+            </button>
           </form>
         </div>
 
         <!-- Comments Thread Section -->
         {% if n.comments %}
-        <div style="margin-top: 16px; padding: 16px; background: rgba(23, 27, 46, 0.4); border-radius: 12px; border-left: 3px solid rgba(102, 126, 234, 0.5);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div style="font-weight: 600; color: #a0a3bd; font-size: 14px;">
+        <div class="comments-container">
+          <div class="comments-header">
+            <div class="comments-title">
               <i class="ph ph-chat-circle"></i> Comments ({{ n.comments|length }})
             </div>
-            <button onclick="toggleComments({{ n.id }})" class="btn-small" style="padding: 4px 10px; font-size: 12px; background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.3); color: #a0a3bd;">
+            <button onclick="toggleComments({{ n.id }})" class="comments-toggle-btn">
               <span class="toggle-text-{{ n.id }}">Hide comments</span>
             </button>
           </div>
 
           <div class="comments-list-{{ n.id }}">
             {% for comment in n.comments %}
-          <div style="padding: 12px; margin-bottom: 8px; background: rgba(16, 21, 34, 0.6); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.2);" id="comment-{{ comment.id }}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-weight: 600; color: var(--accent-terracotta); font-size: 13px;">{{ comment.author }}</span>
+          <div class="comment-item" id="comment-{{ comment.id }}">
+            <div class="comment-header">
+              <span class="comment-author">{{ comment.author }}</span>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <span style="font-size: 11px; color: #6b7280;">{{ comment.created.strftime('%Y-%m-%d %H:%M') }}</span>
+                <span class="comment-date">{{ comment.created.strftime('%Y-%m-%d %H:%M') }}</span>
                 {% if current_user and (comment.user_id == current_user.id or current_user.is_admin) %}
-                  <button onclick="toggleEditComment({{ comment.id }})" class="btn-small" style="padding: 4px 8px; font-size: 11px; background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.4);"><i class="ph ph-pencil"></i> Edit</button>
+                  <button onclick="toggleEditComment({{ comment.id }})" class="btn-small comment-edit-btn"><i class="ph ph-pencil"></i> Edit</button>
                   <form method="POST" action="/comment/{{ comment.id }}/delete" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this comment?');">
-                    <button type="submit" class="btn-small" style="padding: 4px 8px; font-size: 11px; background: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.4);"><i class="ph ph-trash"></i> Delete</button>
+                    <button type="submit" class="btn-small comment-delete-btn"><i class="ph ph-trash"></i> Delete</button>
                   </form>
                 {% endif %}
               </div>
             </div>
 
             <!-- Comment body (view mode) -->
-            <div class="comment-view-{{ comment.id }}" style="color: #e4e6eb; font-size: 14px; line-height: 1.5;">{{ comment.body }}</div>
+            <div class="comment-view-{{ comment.id }} comment-body">{{ comment.body }}</div>
 
             <!-- Comment edit form (hidden by default) -->
             <div class="comment-edit-{{ comment.id }}" style="display: none;">
               <form method="POST" action="/comment/{{ comment.id }}/edit" style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
-                <input type="text" name="comment_body" value="{{ comment.body }}" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.3); background: rgba(16, 21, 34, 0.8); color: #e4e6eb; font-size: 13px;" required>
+                <input type="text" name="comment_body" value="{{ comment.body }}" class="comment-edit-input" required>
                 <button type="submit" class="btn-small btn-edit" style="padding: 6px 12px; font-size: 12px;"><i class="ph ph-floppy-disk"></i> Save</button>
-                <button type="button" onclick="toggleEditComment({{ comment.id }})" class="btn-small" style="padding: 6px 12px; font-size: 12px; background: rgba(107, 114, 128, 0.3); border: 1px solid rgba(107, 114, 128, 0.5);"><i class="ph ph-x"></i> Cancel</button>
+                <button type="button" onclick="toggleEditComment({{ comment.id }})" class="btn-small btn-cancel" style="padding: 6px 12px; font-size: 12px;"><i class="ph ph-x"></i> Cancel</button>
               </form>
             </div>
           </div>
@@ -791,7 +791,7 @@
         {% if current_user %}
         <div style="margin-top: 12px;">
           <form method="POST" action="/comment/{{ n.id }}" style="display:flex; gap:8px; align-items:center;">
-            <input type="text" name="comment_body" placeholder="Add a comment or @mention someone..." style="flex:1; padding:8px 12px; border-radius:8px; border:1px solid rgba(102,126,234,0.2); background: rgba(23,27,46,0.6); color:#e4e6eb; font-size:13px;" required>
+            <input type="text" name="comment_body" placeholder="Add a comment or @mention someone..." class="comment-input comment-body-input" required>
             <button type="submit" class="btn-small btn-edit"><i class="ph ph-chat-circle"></i> Post</button>
           </form>
         </div>

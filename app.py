@@ -677,8 +677,15 @@ def notes_api():
     # Get current user from Supabase
     current_user = get_current_user()
 
+    # Get list of note IDs that current user has liked
+    user_liked_notes = set()
+    if current_user:
+        user_likes = Like.query.filter_by(user_id=current_user.id).all()
+        user_liked_notes = {like.note_id for like in user_likes}
+        print(f"DEBUG: User {current_user.id} has liked notes: {user_liked_notes}")
+
     # Render only the notes HTML fragment
-    html = render_template("notes_fragment.html", notes=notes_page, classes=CLASSES, courses_dict=COURSES_DICT, subjects=SUBJECTS, current_user=current_user)
+    html = render_template("notes_fragment.html", notes=notes_page, classes=CLASSES, courses_dict=COURSES_DICT, subjects=SUBJECTS, current_user=current_user, user_liked_notes=user_liked_notes)
     return jsonify({"html": html, "has_more": has_more})
 
 
