@@ -521,12 +521,59 @@ form .two {
   min-width: 200px;
 }
 
+/* === COURSE SELECTION DROPDOWNS === */
+
+.course-select-container {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.course-select {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Ensure Choices.js dropdowns fill container properly */
+#course-filter-form .choices {
+  width: 100%;
+}
+
+/* Modal course selection styling */
+.modal-content .course-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-content .course-select select {
+  width: 100%;
+}
+
+/* Ensure modal Choices.js dropdowns fill properly */
+.modal-content .choices {
+  width: 100%;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .course-select-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .course-select {
+    width: 100%;
+  }
+}
+
 /* === CHOICES.JS THEME CUSTOMIZATION === */
 
 /* ===== CHOICES.JS THEME CUSTOMIZATION ===== */
 
 .choices {
   margin-bottom: 0;
+  width: 100%;
 }
 
 /* Main dropdown container - FORCE theme colors */

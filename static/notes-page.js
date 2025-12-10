@@ -7,7 +7,10 @@
 
 let currentPage = 1;
 let CLASSES = [];
+let COURSES_DICT = {};
+let SUBJECTS = [];
 let subjectChoice, numberChoice;
+let createSubjectChoice, createNumberChoice;
 
 // === UTILITY FUNCTIONS ===
 
@@ -77,33 +80,14 @@ async function loadMore() {
 // === COURSE FILTER LOGIC ===
 
 /**
- * Parses the CLASSES array into subjects and numbers
+ * Returns course data from global COURSES_DICT variable
+ * Data is already structured from the backend JSON file
  * @returns {Object} - { subjects: Array, classesBySubject: Object }
  */
 function parseClasses() {
-  const subjects = new Set();
-  const classesBySubject = {};
-
-  CLASSES.forEach(cls => {
-    // Extract subject (letters) and number (digits)
-    // Example: "CS124" -> subject="CS", number="124"
-    const match = cls.match(/^([A-Z]+)(\d+)$/);
-    if (match) {
-      const subject = match[1];  // "CS"
-      const number = match[2];    // "124"
-
-      subjects.add(subject);
-
-      if (!classesBySubject[subject]) {
-        classesBySubject[subject] = [];
-      }
-      classesBySubject[subject].push(number);
-    }
-  });
-
   return {
-    subjects: Array.from(subjects).sort(),
-    classesBySubject: classesBySubject
+    subjects: SUBJECTS,
+    classesBySubject: COURSES_DICT
   };
 }
 
@@ -258,60 +242,154 @@ function handleNumberChange() {
   }
 }
 
+// === MODAL DROPDOWN HANDLERS ===
+
+/**
+ * Initialize dropdowns in the Create Note modal
+ */
+function initializeCreateModalDropdowns() {
+  const createSubjectSelect = document.getElementById('create-subject-select');
+  const createNumberSelect = document.getElementById('create-number-select');
+  if (!createSubjectSelect || !createNumberSelect) return;
+
+  createSubjectChoice = new Choices(createSubjectSelect, {
+    searchEnabled: true,
+    searchPlaceholderValue: 'Search subjects...',
+    itemSelectText: '',
+    shouldSort: false
+  });
+
+  createNumberChoice = new Choices(createNumberSelect, {
+    searchEnabled: true,
+    searchPlaceholderValue: 'Search numbers...',
+    itemSelectText: '',
+    shouldSort: false
+  });
+
+  createSubjectSelect.addEventListener('change', function() {
+    const numbers = COURSES_DICT[this.value] || [];
+    createNumberChoice.clearStore();
+    createNumberChoice.setChoices([
+      { value: '', label: 'Number', selected: true },
+      ...numbers.sort((a, b) => a - b).map(num => ({value: num.toString(), label: num.toString()}))
+    ], 'value', 'label', true);
+  });
+
+  createNumberSelect.addEventListener('change', function() {
+    const subject = createSubjectSelect.value;
+    const number = this.value;
+    document.getElementById('create-class-hidden').value = subject && number ? subject + number : '';
+  });
+}
+
+/**
+ * Initialize dropdowns in Edit Note modals
+ */
+function initializeEditModalDropdowns() {
+  document.querySelectorAll('.edit-subject-select').forEach(select => {
+    const noteId = select.dataset.noteId;
+    const numberSelect = document.getElementById(`edit-number-${noteId}`);
+    const hiddenInput = document.getElementById(`edit-class-hidden-${noteId}`);
+    const currentClassCode = hiddenInput.value;
+
+    const match = currentClassCode.match(/^([A-Z]+)(\d+)$/);
+    let currentSubject = '', currentNumber = '';
+    if (match) {
+      currentSubject = match[1];
+      currentNumber = match[2];
+    }
+
+    if (currentSubject) {
+      select.value = currentSubject;
+      const numbers = COURSES_DICT[currentSubject] || [];
+      numberSelect.innerHTML = '<option value="">Number</option>';
+      numbers.sort((a, b) => a - b).forEach(num => {
+        const option = document.createElement('option');
+        option.value = num.toString();
+        option.textContent = num.toString();
+        if (num.toString() === currentNumber) option.selected = true;
+        numberSelect.appendChild(option);
+      });
+    }
+
+    select.addEventListener('change', function() {
+      const numbers = COURSES_DICT[this.value] || [];
+      numberSelect.innerHTML = '<option value="">Number</option>';
+      numbers.sort((a, b) => a - b).forEach(num => {
+        const option = document.createElement('option');
+        option.value = num.toString();
+        option.textContent = num.toString();
+        numberSelect.appendChild(option);
+      });
+    });
+
+    numberSelect.addEventListener('change', function() {
+      const subject = select.value;
+      const number = this.value;
+      hiddenInput.value = subject && number ? subject + number : currentClassCode;
+    });
+  });
+}
+
 // === INITIALIZATION ===
 
 /**
  * Initializes all page functionality when DOM is ready
  * @param {number} initialPage - The current page number
  * @param {Array} classes - Array of available class names
+ * @param {Object} coursesDict - Course dictionary for two-dropdown system
+ * @param {Array} subjects - List of all subjects
  * @param {string} selectedFilter - Currently selected class filter
  */
-function initializePage(initialPage, classes, selectedFilter) {
+function initializePage(initialPage, classes, coursesDict, subjects, selectedFilter) {
   // Set initial values from template
   currentPage = initialPage;
   CLASSES = classes;
+  COURSES_DICT = coursesDict;
+  SUBJECTS = subjects;
 
   // Populate course filter dropdowns
   populateSubjects(selectedFilter);
   updateNumberDropdown(true, selectedFilter);
 
-  // Initialize Choices.js on dropdowns
+  // Initialize Choices.js on filter dropdowns
   const subjectSelect = document.getElementById('subject-select');
   subjectChoice = new Choices(subjectSelect, {
     searchEnabled: true,
-    searchPlaceholderValue: 'Type to search subjects...',
+    searchPlaceholderValue: 'Search subjects...',
     itemSelectText: '',
-    shouldSort: false,
-    searchResultLimit: 20,
-    removeItemButton: false
+    shouldSort: false
   });
 
   const numberSelect = document.getElementById('number-select');
   numberChoice = new Choices(numberSelect, {
     searchEnabled: true,
-    searchPlaceholderValue: 'Type to search numbers...',
+    searchPlaceholderValue: 'Search numbers...',
     itemSelectText: '',
-    shouldSort: false,
-    searchResultLimit: 20,
-    removeItemButton: false
+    shouldSort: false
   });
 
   // Add event listeners
   subjectSelect.addEventListener('change', handleSubjectChange);
   numberSelect.addEventListener('change', handleNumberChange);
 
+  // Initialize create and edit modal dropdowns
+  initializeCreateModalDropdowns();
+  initializeEditModalDropdowns();
+
   // Modal event listeners
   const modal = document.getElementById('note-modal');
-  modal.addEventListener('click', function(e) {
-    // If click is on the overlay (not the content box)
-    if (e.target === modal) {
-      closeModal();
-    }
-  });
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
 
   // Close modal with Escape key
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
+    if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
       closeModal();
     }
   });
@@ -324,7 +402,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const pageData = document.getElementById('page-data');
   const initialPage = parseInt(pageData.dataset.page || '1');
   const classes = JSON.parse(pageData.dataset.classes || '[]');
+  const coursesDict = JSON.parse(pageData.dataset.coursesDict || '{}');
+  const subjects = JSON.parse(pageData.dataset.subjects || '[]');
   const selectedFilter = pageData.dataset.selectedFilter || 'All';
 
-  initializePage(initialPage, classes, selectedFilter);
+  initializePage(initialPage, classes, coursesDict, subjects, selectedFilter);
 });

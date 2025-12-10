@@ -76,11 +76,23 @@
 
       <!-- Class selector for editing -->
       <div style="margin-bottom: 12px;">
-        <select name="class" style="width: 100%;">
-          {% for c in classes %}
-          <option value="{{ c }}" {% if c == n.class_code %}selected{% endif %}>{{ c }}</option>
-          {% endfor %}
-        </select>
+        <label style="display: block; margin-bottom: 8px; color: #a0a3bd; font-size: 14px;">Course</label>
+        <div style="display: flex; gap: 12px;">
+          <div class="course-select">
+            <select id="edit-subject-{{ n.id }}" data-note-id="{{ n.id }}" class="edit-subject-select">
+              <option value="">Subject</option>
+              {% for subj in subjects %}
+              <option value="{{ subj }}">{{ subj }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="course-select">
+            <select id="edit-number-{{ n.id }}" class="edit-number-select">
+              <option value="">Number</option>
+            </select>
+          </div>
+          <input type="hidden" name="class" id="edit-class-hidden-{{ n.id }}" value="{{ n.class_code }}">
+        </div>
       </div>
 
       <!-- Body textarea for editing -->

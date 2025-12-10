@@ -9,6 +9,8 @@ import os
 import uuid
 from functools import wraps
 import re
+import json
+from pathlib import Path
 
 # FLASK APP CONFIGURATION
 # Load environment variables from .env file
@@ -44,8 +46,34 @@ ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'txt', 
 # Initialize SQLAlchemy database with our app
 db = SQLAlchemy(app)
 
-# List of available class codes for the dropdown filter
-CLASSES = ["CS124", "CS128", "CS173", "MATH221", "MATH231", "ENG100", "CS100", "RHET105", "PHY211", "PHY212"]
+# Load courses from JSON configuration file
+def load_courses_from_json():
+    """Load courses from courses.json with fallback to hardcoded list"""
+    courses_file = Path(__file__).parent / 'courses.json'
+    try:
+        with open(courses_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            courses_dict = data.get('courses', {})
+
+            # Generate flat list for backward compatibility (e.g., "CS124", "MATH221")
+            flat_list = [f"{subj}{num}" for subj, nums in sorted(courses_dict.items())
+                         for num in sorted(nums)]
+
+            return {
+                'courses_dict': courses_dict,
+                'flat_list': flat_list,
+                'subjects': sorted(courses_dict.keys())
+            }
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"WARNING: Error loading courses.json: {e}. Using fallback.")
+        fallback = ["CS124", "CS128", "CS173", "MATH221", "MATH231", "ENG100", "CS100", "RHET105", "PHY211", "PHY212"]
+        return {'courses_dict': {}, 'flat_list': fallback, 'subjects': []}
+
+# Load courses on app startup
+COURSES_DATA = load_courses_from_json()
+CLASSES = COURSES_DATA['flat_list']  # Backward compatibility
+COURSES_DICT = COURSES_DATA['courses_dict']  # For two-dropdown system
+SUBJECTS = COURSES_DATA['subjects']  # List of all subjects
 
 # PAGE_SIZE controls how many notes are returned per page for pagination.
 PAGE_SIZE = 5
@@ -612,6 +640,8 @@ def notes():
         total=total,
         tag_filter=tag_filter,
         classes=CLASSES,  # List of all available classes
+        courses_dict=COURSES_DICT,  # Course dictionary for two-dropdown system
+        subjects=SUBJECTS,  # List of all subjects
         selected_filter=selected_filter,  # Currently selected class filter
         search_query=search_query,  # Current search term
         date_filter=date_filter,  # Currently selected date range
@@ -648,7 +678,7 @@ def notes_api():
     current_user = get_current_user()
 
     # Render only the notes HTML fragment
-    html = render_template("notes_fragment.html", notes=notes_page, classes=CLASSES, current_user=current_user)
+    html = render_template("notes_fragment.html", notes=notes_page, classes=CLASSES, courses_dict=COURSES_DICT, subjects=SUBJECTS, current_user=current_user)
     return jsonify({"html": html, "has_more": has_more})
 
 

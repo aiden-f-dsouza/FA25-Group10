@@ -402,6 +402,8 @@
        style="display: none;"
        data-page="{{ page|default(1) }}"
        data-classes='{{ classes | tojson }}'
+       data-courses-dict='{{ courses_dict | tojson }}'
+       data-subjects='{{ subjects | tojson }}'
        data-selected-filter="{{ selected_filter or 'All' }}">
   </div>
 
@@ -498,14 +500,20 @@
         <input type="hidden" name="tag_filter" value="{{ tag_filter or 'All' }}">
         <input type="hidden" name="date_filter" value="{{ date_filter or 'All' }}">
         <input type="hidden" name="sort_by" value="{{ sort_by or 'recent' }}">
+        <input type="hidden" name="class_filter" id="class-filter-hidden" value="{{ selected_filter or 'All' }}">
 
-        <!-- Class filter dropdown -->
-        <select name="class_filter" onchange="this.form.submit()">
-          <option value="All" {% if selected_filter == "All" %}selected{% endif %}>All Classes</option>
-          {% for cls in classes %}
-            <option value="{{ cls }}" {% if selected_filter == cls %}selected{% endif %}>{{ cls }}</option>
-          {% endfor %}
-        </select>
+        <div class="course-select-container">
+          <div class="course-select">
+            <select id="subject-select">
+              <option value="">All Subjects</option>
+            </select>
+          </div>
+          <div class="course-select">
+            <select id="number-select">
+              <option value="">All Numbers</option>
+            </select>
+          </div>
+        </div>
       </form>
     </div>
 
@@ -841,11 +849,25 @@
 
             <!-- Class selector dropdown -->
             <div style="margin-top: 16px;">
-              <select name="class">
-                {% for c in classes %}
-                <option value="{{ c }}">{{ c }}</option>
-                {% endfor %}
-              </select>
+              <label style="display: block; margin-bottom: 8px; color: #a0a3bd; font-size: 14px; font-weight: 600;">
+                <i class="ph ph-book-open"></i> Select Course
+              </label>
+              <div style="display: flex; gap: 12px;">
+                <div class="course-select">
+                  <select id="create-subject-select" name="subject">
+                    <option value="">Subject</option>
+                    {% for subj in subjects %}
+                    <option value="{{ subj }}">{{ subj }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="course-select">
+                  <select id="create-number-select" name="number">
+                    <option value="">Number</option>
+                  </select>
+                </div>
+                <input type="hidden" name="class" id="create-class-hidden" value="">
+              </div>
             </div>
 
             <!-- Note content text area -->
