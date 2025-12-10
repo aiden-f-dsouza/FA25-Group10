@@ -595,16 +595,10 @@
             <span class="meta-tag"><i class="ph ph-calendar"></i> {{ n.created.strftime('%Y-%m-%d %H:%M') }}</span>
             <span class="meta-tag"><i class="ph ph-book-open"></i> {{ n.class_code }}</span>
             <span class="meta-tag"><i class="ph-fill ph-heart" style="color: #ef4444;"></i> {{ n.likes|length }}</span>
-            {# Tags badges on note #}
+            {# Tags badges on note (includes both form tags and body hashtags) #}
             {% if n.get_tags_list() %}
               {% for tag in n.get_tags_list() %}
-                <a href="/notes?tag_filter={{ tag }}" class="meta-tag" style="text-decoration:none;">#{{ tag }}</a>
-              {% endfor %}
-            {% endif %}
-            {# Hashtags badges on note #}
-            {% if n.get_hashtags() %}
-              {% for ht in n.get_hashtags() %}
-                <a href="/notes?tag_filter={{ ht }}" class="meta-tag">#{{ ht }}</a>
+                <a href="/notes?tag_filter={{ tag }}" class="meta-tag">#{{ tag }}</a>
               {% endfor %}
             {% endif %}
           </div>
