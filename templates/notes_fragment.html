@@ -157,12 +157,14 @@
     {% endif %}
 
     <!-- Like button - available to all users -->
-    <form method="POST" action="/like/{{ n.id }}" style="display:inline; margin-left:8px;">
-      <button type="submit" class="like-button {% if n.id in user_liked_notes %}liked{% endif %}" title="Like">
-        <i class="{% if n.id in user_liked_notes %}ph-fill{% else %}ph{% endif %} ph-heart"></i>
-        {{ n.likes | length }}
-      </button>
-    </form>
+    <button type="button"
+            class="like-button {% if n.id in user_liked_notes %}liked{% endif %}"
+            onclick="toggleLike({{ n.id }}, this)"
+            title="Like"
+            style="margin-left:8px;">
+      <i class="{% if n.id in user_liked_notes %}ph-fill{% else %}ph{% endif %} ph-heart"></i>
+      <span class="like-count">{{ n.likes | length }}</span>
+    </button>
   </div>
 
   <!-- Quick comment form -->

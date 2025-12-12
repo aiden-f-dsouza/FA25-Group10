@@ -714,6 +714,50 @@ def like_note(note_id):
     return redirect(request.referrer or url_for("notes"))
 
 
+# AJAX endpoint to toggle like for a note
+@app.route("/api/like/<int:note_id>", methods=["POST"])
+def api_like_note(note_id):
+    """AJAX endpoint for like/unlike toggle - returns JSON"""
+    try:
+        # Get current user
+        current_user = get_current_user()
+        user_id = current_user.id if current_user else "Anonymous"
+
+        # Get the note
+        note = Note.query.get_or_404(note_id)
+
+        # Check if user already liked this note
+        existing_like = Like.query.filter_by(note_id=note_id, user_id=user_id).first()
+
+        if existing_like:
+            # Unlike - remove the existing like
+            db.session.delete(existing_like)
+            db.session.commit()
+            liked = False
+        else:
+            # Like - create a new like
+            new_like = Like(note_id=note_id, user_id=user_id)
+            db.session.add(new_like)
+            db.session.commit()
+            liked = True
+
+        # Get updated count
+        like_count = Like.query.filter_by(note_id=note_id).count()
+
+        return jsonify({
+            "success": True,
+            "liked": liked,
+            "like_count": like_count,
+            "user_id": user_id
+        })
+    except Exception as e:
+        print(f"Error in api_like_note: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to toggle like"
+        }), 500
+
+
 # Endpoint to add a comment to a note
 @app.route("/comment/<int:note_id>", methods=["POST"])
 @login_required
@@ -763,6 +807,72 @@ def add_comment(note_id):
     return redirect(request.referrer or url_for("notes"))
 
 
+# AJAX endpoint to add a comment to a note
+@app.route("/api/comment/<int:note_id>", methods=["POST"])
+@login_required
+def api_add_comment(note_id):
+    """AJAX endpoint for adding comments - returns JSON"""
+    try:
+        current_user = get_current_user()
+        data = request.get_json()
+        body = data.get("comment_body", "").strip()
+
+        if not body:
+            return jsonify({"success": False, "error": "Comment body is required"}), 400
+
+        note = Note.query.get_or_404(note_id)
+
+        new_comment = Comment(
+            note_id=note_id,
+            author=current_user.email,
+            body=body,
+            user_id=current_user.id
+        )
+        db.session.add(new_comment)
+        db.session.commit()
+
+        # Extract mentions
+        mentioned_emails = extract_mentions(body)
+        for email in mentioned_emails:
+            mention = Mention(
+                comment_id=new_comment.id,
+                note_id=note_id,
+                mentioned_user_email=email,
+                mentioned_user_id=None,
+                mentioning_author=current_user.email,
+                is_read=False
+            )
+            db.session.add(mention)
+
+        if mentioned_emails:
+            db.session.commit()
+
+        # Build response
+        comment_count = Comment.query.filter_by(note_id=note_id).count()
+
+        return jsonify({
+            "success": True,
+            "comment": {
+                "id": new_comment.id,
+                "author": new_comment.author,
+                "body": new_comment.body,
+                "created": new_comment.created.strftime('%Y-%m-%d %H:%M:%S'),
+                "created_relative": time_ago_filter(new_comment.created),
+                "user_id": new_comment.user_id,
+                "can_edit": True,
+                "can_delete": True
+            },
+            "comment_count": comment_count,
+            "mentions_created": len(mentioned_emails)
+        })
+    except Exception as e:
+        print(f"Error in api_add_comment: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to add comment"
+        }), 500
+
+
 # Endpoint to edit a comment
 @app.route("/comment/<int:comment_id>/edit", methods=["POST"])
 @login_required
@@ -786,6 +896,45 @@ def edit_comment(comment_id):
     return redirect(request.referrer or url_for("notes"))
 
 
+# AJAX endpoint to edit a comment
+@app.route("/api/comment/<int:comment_id>/edit", methods=["POST"])
+@login_required
+def api_edit_comment(comment_id):
+    """AJAX endpoint for editing comments - returns JSON"""
+    try:
+        current_user = get_current_user()
+        comment = Comment.query.get_or_404(comment_id)
+
+        # Check permissions
+        if comment.user_id != current_user.id and not current_user.is_admin:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+        data = request.get_json()
+        new_body = data.get("comment_body", "").strip()
+
+        if not new_body:
+            return jsonify({"success": False, "error": "Comment body is required"}), 400
+
+        # Update the comment body
+        comment.body = new_body
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "comment": {
+                "id": comment.id,
+                "body": comment.body,
+                "created": comment.created.strftime('%Y-%m-%d %H:%M:%S')
+            }
+        })
+    except Exception as e:
+        print(f"Error in api_edit_comment: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to edit comment"
+        }), 500
+
+
 # Endpoint to delete a comment
 @app.route("/comment/<int:comment_id>/delete", methods=["POST"])
 @login_required
@@ -806,6 +955,46 @@ def delete_comment(comment_id):
     db.session.commit()
 
     return redirect(request.referrer or url_for("notes"))
+
+
+# AJAX endpoint to delete a comment
+@app.route("/api/comment/<int:comment_id>/delete", methods=["POST"])
+@login_required
+def api_delete_comment(comment_id):
+    """AJAX endpoint for deleting comments - returns JSON"""
+    try:
+        current_user = get_current_user()
+        comment = Comment.query.get_or_404(comment_id)
+
+        # Check permissions
+        if comment.user_id != current_user.id and not current_user.is_admin:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+        # Get note_id before deleting
+        note_id = comment.note_id
+
+        # Delete associated mentions first
+        Mention.query.filter_by(comment_id=comment_id).delete()
+
+        # Delete the comment
+        db.session.delete(comment)
+        db.session.commit()
+
+        # Get updated comment count
+        comment_count = Comment.query.filter_by(note_id=note_id).count()
+
+        return jsonify({
+            "success": True,
+            "comment_id": comment_id,
+            "note_id": note_id,
+            "comment_count": comment_count
+        })
+    except Exception as e:
+        print(f"Error in api_delete_comment: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to delete comment"
+        }), 500
 
 
 # MENTION ROUTES
@@ -957,6 +1146,45 @@ def delete_note(note_id):
 
     # Redirect back to the notes feed
     return redirect(url_for("notes"))
+
+
+# AJAX endpoint to delete a note
+@app.route("/api/note/<int:note_id>/delete", methods=["POST"])
+@login_required
+def api_delete_note(note_id):
+    """AJAX endpoint for deleting notes - returns JSON"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"success": False, "error": "Not authenticated"}), 401
+
+        note = Note.query.get_or_404(note_id)
+
+        # Permission check
+        if note.user_id != current_user.id and not current_user.is_admin:
+            return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+        # Delete all associated files from the filesystem
+        for attachment in note.attachments:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], attachment.filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        # Delete the note from the database
+        # The cascade relationship will automatically delete all attachment, like, and comment records
+        db.session.delete(note)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "note_id": note_id
+        })
+    except Exception as e:
+        print(f"Error in api_delete_note: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to delete note"
+        }), 500
 
 
 # AUTHENTICATION ROUTES
